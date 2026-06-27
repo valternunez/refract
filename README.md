@@ -223,6 +223,11 @@ For visual diffs, keep a separate baseline dir per engine (`--baseline ./baselin
 since engines render slightly differently. Firefox isn't supported yet (it can't emulate
 `isMobile` and ignores DPR) — open an issue if you need it.
 
+## Roadmap
+
+Where Refract is headed — deeper findings, shareable reports, more device/engine coverage —
+is in [docs/ROADMAP.md](docs/ROADMAP.md). It's directional, not a promise; real usage steers it.
+
 ## Security
 
 Refract loads **any URL you give it** — including `file://` (local files) and
