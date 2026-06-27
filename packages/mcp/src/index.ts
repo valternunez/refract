@@ -1,7 +1,14 @@
 import { createRequire } from 'node:module';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { RENDER_RESPONSIVE_DESCRIPTION, renderResponsive, renderResponsiveSchema } from './tool';
+import {
+  DIFF_RESPONSIVE_DESCRIPTION,
+  RENDER_RESPONSIVE_DESCRIPTION,
+  diffResponsive,
+  diffResponsiveSchema,
+  renderResponsive,
+  renderResponsiveSchema,
+} from './tool';
 
 // Keep the advertised server version in sync with the package (resolves in both
 // the built dist/ and the published tarball, where package.json sits beside it).
@@ -13,6 +20,12 @@ server.registerTool(
   'render_responsive',
   { description: RENDER_RESPONSIVE_DESCRIPTION, inputSchema: renderResponsiveSchema },
   renderResponsive,
+);
+
+server.registerTool(
+  'diff_responsive',
+  { description: DIFF_RESPONSIVE_DESCRIPTION, inputSchema: diffResponsiveSchema },
+  diffResponsive,
 );
 
 await server.connect(new StdioServerTransport());

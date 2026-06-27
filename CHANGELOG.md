@@ -6,6 +6,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **MCP `diff_responsive` tool.** Visual regression in-band for agents: renders,
+  compares against a saved baseline, and returns a per-viewport status with the % of
+  pixels changed, a downscaled diff image for each changed viewport, and a `report.html`
+  path. `update: true` (re)writes the baseline; a missing baseline returns teaching text.
+  Accepts the same options as `render_responsive` plus `baseline`, `threshold`.
 - **`injectCss` / `--inject-css`.** Inject a CSS string into the page just before
   capture — hide dynamic/flaky elements (clocks, live badges, ads) for stable diffs,
   or preview a style tweak. Applied after `freeze` and before findings, so hidden

@@ -76,12 +76,19 @@ for (const shot of shots) {
 }
 ```
 
-The server exposes one tool, `render_responsive`, whose description tells an agent
-exactly when and how to call it — no docs required. One call returns a text
-manifest of absolute saved paths, structured findings as JSON (see below), and a
-downscaled preview image per viewport (≤800px wide, so it won't blow the agent's
-context window); full-resolution PNGs are written to disk. Load failures come back
-as teaching errors the agent can act on.
+The server exposes two tools, each with a description that tells an agent exactly
+when and how to call it — no docs required:
+
+- **`render_responsive`** — one call returns a text manifest of absolute saved
+  paths, structured findings as JSON (see below), and a downscaled preview image per
+  viewport (≤800px wide, so it won't blow the agent's context window); full-resolution
+  PNGs are written to disk.
+- **`diff_responsive`** — visual regression in-band: renders, compares against a saved
+  baseline, and returns a per-viewport status (`unchanged`/`changed`/…) with the % of
+  pixels changed, a downscaled diff image for each changed viewport, and a `report.html`
+  path. First run with `update: true` to save the baseline, then compare after a change.
+
+Load failures come back as teaching errors the agent can act on.
 
 Working in this repo? A committed `.mcp.json` registers the local server
 (`node packages/mcp/dist/index.js`) — run `pnpm build` first and restart your

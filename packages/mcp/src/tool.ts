@@ -1,4 +1,6 @@
-import { render } from '@getrefractjs/core';
+import { copyFile, mkdir, readFile } from 'node:fs/promises';
+import { dirname, join, resolve } from 'node:path';
+import { diffShots, render, writeDiffReport } from '@getrefractjs/core';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import sharp from 'sharp';
 import { z } from 'zod';
@@ -123,6 +125,116 @@ export async function renderResponsive(args: RenderResponsiveArgs): Promise<Call
       type: 'text',
       text: `${shot.preset} (${shot.width}×${shot.height})${also(shot)}:`,
     });
+    content.push({ type: 'image', data: preview.toString('base64'), mimeType: 'image/png' });
+  }
+  return { content };
+}
+
+/**
+ * Like render_responsive's description, this is product copy an agent reads to
+ * decide when to call diff_responsive. See CLAUDE.md "agent-first".
+ */
+export const DIFF_RESPONSIVE_DESCRIPTION = `Compare a URL's current rendering against a saved baseline and report what changed visually, per viewport.
+
+Use this to verify a change did NOT break layout — e.g. after a CSS fix, before merge, or against a deployed preview.
+
+Example:
+  diff_responsive({ url: "http://localhost:3000" })
+  → renders mobile/tablet/desktop, compares each against ./refract-baseline/{preset}.png,
+    and returns a per-viewport status (unchanged | changed | size_changed | no_baseline)
+    with the % of pixels changed, a downscaled diff image for each changed viewport, and
+    the path to a report.html (baseline | current | diff grid).
+
+First run, no baseline yet: call once with update:true to save the current renders as the
+baseline (diff_responsive({ url, update: true })), then call again after your change to compare.
+
+It takes the same options as render_responsive (viewports, selector, freeze, injectCss,
+waitFor, waitForFunction, storageState, …) plus baseline (dir, default ./refract-baseline),
+threshold (0-1 pixel sensitivity, default 0.1), and update (rewrite the baseline). Tip:
+injectCss to hide dynamic/flaky elements (clocks, ads) so they don't show as false changes.
+
+This tool does NOT click, type, navigate, or log in — it renders fixed viewports and diffs pixels.
+
+Security: it loads ANY url and reads/writes PNG files under the baseline and output dirs; the storageState file's cookies are sent to url. Don't point it at untrusted URLs.`;
+
+/** Input shape for `diff_responsive`: the render params plus baseline controls. */
+export const diffResponsiveSchema = {
+  ...renderResponsiveSchema,
+  baseline: z
+    .string()
+    .optional()
+    .describe('Directory of baseline PNGs to compare against (default ./refract-baseline).'),
+  update: z
+    .boolean()
+    .optional()
+    .describe('Write the current renders as the new baseline instead of comparing.'),
+  threshold: z.number().optional().describe('pixelmatch per-pixel sensitivity, 0-1 (default 0.1).'),
+};
+
+type DiffResponsiveArgs = z.infer<z.ZodObject<typeof diffResponsiveSchema>>;
+
+/**
+ * Render `url` and either (update) save the shots as the baseline, or compare against
+ * it and return a per-viewport status summary, a downscaled diff image for each changed
+ * viewport, and the path to an HTML report. Failures come back as a teaching error.
+ */
+export async function diffResponsive(args: DiffResponsiveArgs): Promise<CallToolResult> {
+  const { baseline = './refract-baseline', update, threshold, ...renderArgs } = args;
+  let shots: Awaited<ReturnType<typeof render>>;
+  try {
+    shots = await render(renderArgs);
+  } catch (err) {
+    return {
+      isError: true,
+      content: [{ type: 'text', text: `diff_responsive failed: ${(err as Error).message}` }],
+    };
+  }
+
+  const baselineDir = resolve(baseline);
+  const outDir = shots[0] ? dirname(shots[0].savedPath) : resolve('./refract-shots');
+
+  if (update) {
+    await mkdir(baselineDir, { recursive: true });
+    for (const s of shots) await copyFile(s.savedPath, join(baselineDir, `${s.preset}.png`));
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `Wrote ${shots.length} baseline(s) to ${baselineDir}. Call diff_responsive again (without update) after your change to compare.`,
+        },
+      ],
+    };
+  }
+
+  const results = await diffShots(shots, { baselineDir, outDir, threshold });
+  const reportPath = await writeDiffReport(results, outDir);
+  const changed = results.filter((r) => r.status !== 'unchanged');
+
+  const summary = results
+    .map((r) => {
+      if (r.status === 'changed')
+        return `- ${r.preset}: changed (${((r.diffRatio ?? 0) * 100).toFixed(2)}%)`;
+      if (r.status === 'size_changed')
+        return `- ${r.preset}: size_changed (${r.baselineWidth}×${r.baselineHeight} → ${r.width}×${r.height})`;
+      if (r.status === 'no_baseline') return `- ${r.preset}: no_baseline`;
+      return `- ${r.preset}: unchanged`;
+    })
+    .join('\n');
+
+  const noBaseline = results.some((r) => r.status === 'no_baseline');
+  const header = noBaseline
+    ? `No baseline for some viewport(s) in ${baselineDir}. Call diff_responsive({ ..., update: true }) once to create it, then compare.`
+    : changed.length === 0
+      ? `No visual changes across ${results.length} viewport(s).`
+      : `${changed.length} of ${results.length} viewport(s) changed.`;
+
+  const content: CallToolResult['content'] = [
+    { type: 'text', text: `${header}\n${summary}\n\nReport: ${reportPath}` },
+  ];
+  for (const r of changed) {
+    if (!r.diffPath) continue; // size_changed/no_baseline have no diff image
+    const preview = await downscalePreview(await readFile(r.diffPath));
+    content.push({ type: 'text', text: `${r.preset} diff:` });
     content.push({ type: 'image', data: preview.toString('base64'), mimeType: 'image/png' });
   }
   return { content };

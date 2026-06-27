@@ -1,9 +1,10 @@
-import { rm } from 'node:fs/promises';
+import { mkdtemp, rm, stat } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { isAbsolute, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import { afterAll, describe, expect, it } from 'vitest';
-import { downscalePreview, renderResponsive } from './tool';
+import { diffResponsive, downscalePreview, renderResponsive } from './tool';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 const demo = pathToFileURL(join(here, '../../../examples/demo-site/index.html')).href;
@@ -61,5 +62,45 @@ describe('renderResponsive', () => {
     expect(result.isError).toBe(true);
     const text = result.content[0]?.type === 'text' ? result.content[0].text : '';
     expect(text).toMatch(/resolve|host/i);
+  }, 30000);
+});
+
+const firstText = (r: Awaited<ReturnType<typeof diffResponsive>>) =>
+  r.content[0]?.type === 'text' ? r.content[0].text : '';
+
+describe('diffResponsive', () => {
+  afterAll(async () => {
+    await rm('refract-shots', { recursive: true, force: true });
+  });
+
+  it('writes a baseline with update, then reports unchanged', async () => {
+    const baseline = await mkdtemp(join(tmpdir(), 'refract-mcp-base-'));
+    try {
+      const updated = await diffResponsive({
+        url: demo,
+        viewports: ['400x800'],
+        baseline,
+        update: true,
+      });
+      expect(firstText(updated)).toMatch(/wrote 1 baseline/i);
+      expect((await stat(join(baseline, '400x800.png'))).isFile()).toBe(true);
+
+      const compared = await diffResponsive({ url: demo, viewports: ['400x800'], baseline });
+      expect(firstText(compared)).toMatch(/no visual changes/i);
+    } finally {
+      await rm(baseline, { recursive: true, force: true });
+    }
+  }, 40000);
+
+  it('teaches how to create a baseline when none exists', async () => {
+    const baseline = await mkdtemp(join(tmpdir(), 'refract-mcp-empty-'));
+    try {
+      const result = await diffResponsive({ url: demo, viewports: ['400x800'], baseline });
+      const text = firstText(result);
+      expect(text).toMatch(/no_baseline/);
+      expect(text).toMatch(/update/i);
+    } finally {
+      await rm(baseline, { recursive: true, force: true });
+    }
   }, 30000);
 });

@@ -17,13 +17,15 @@ Each is 5–15 lines: when to use it, the calls in order, what to look for.
 ## Playbook: visual-diff before merge
 
 **When:** you want before/after proof a change didn't break the layout anywhere.
-1. On the base branch (CLI): `refract diff <url> --update --freeze` — snapshots the
-   baseline into `./refract-baseline/{preset}.png`.
-2. Apply the change, then: `refract diff <url> --freeze`.
-3. Read the output. `unchanged` everywhere → safe to merge. Any `changed` line gives
-   the % of pixels and a `{preset}.diff.png`; open `report.html` for the
-   baseline │ current │ diff grid. The command exits non-zero on any change, so it
-   drops straight into CI. Re-run with `--update` to accept the new look.
+1. On the base branch — MCP: `diff_responsive({ url, update: true })`, or CLI:
+   `refract diff <url> --update --freeze` — snapshots the baseline into
+   `./refract-baseline/{preset}.png`.
+2. Apply the change, then compare — MCP: `diff_responsive({ url })` (returns a status
+   per viewport + a diff image for each change), or CLI: `refract diff <url> --freeze`.
+3. `unchanged` everywhere → safe to merge. Any `changed` gives the % of pixels and a
+   diff image/`report.html` (baseline │ current │ diff). The CLI exits non-zero on any
+   change, so it drops straight into CI. Re-run with `update`/`--update` to accept.
+   Tip: pass `injectCss` to hide live clocks/ads so they don't read as false changes.
 
 ## Playbook: screenshot a page behind a login
 
