@@ -42,6 +42,15 @@ cli
 
       for (const s of shots) {
         console.log(`${s.preset.padEnd(20)} ${s.width}x${s.height}  ${s.savedPath}`);
+        if (s.findings.length === 0) {
+          console.log('  no findings');
+          continue;
+        }
+        for (const f of s.findings) {
+          const tag = f.severity === 'error' ? '[error]' : '[warn] ';
+          const extra = [f.selector, f.size].filter(Boolean).join('  ');
+          console.log(`  ${tag} ${f.type}  ${f.detail}${extra ? `  ${extra}` : ''}`);
+        }
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
