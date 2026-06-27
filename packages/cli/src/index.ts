@@ -8,9 +8,20 @@ interface Flags {
   viewports: string;
   out: string;
   selector?: string;
+  waitFor?: string;
   freeze?: boolean;
   dpr?: string;
   concurrency?: string;
+}
+
+/** Parse an optional numeric flag, teaching the user when it isn't a positive number. */
+function positiveNumber(value: string | undefined, flag: string): number | undefined {
+  if (value === undefined) return undefined;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) {
+    throw new Error(`${flag} must be a positive number, got "${value}".`);
+  }
+  return n;
 }
 
 cli
@@ -20,6 +31,7 @@ cli
   })
   .option('--out <dir>', 'Output directory', { default: './refract-shots' })
   .option('--selector <css>', 'Clip to a single element')
+  .option('--wait-for <css>', 'Wait for this selector before capturing')
   .option('--freeze', 'Disable animations and force eager image loading')
   .option('--dpr <n>', 'Override device scale factor (e.g. 1 for smaller files)')
   .option('--concurrency <n>', 'Max viewports rendered in parallel')
@@ -35,9 +47,10 @@ cli
         viewports,
         out: flags.out,
         selector: flags.selector,
+        waitFor: flags.waitFor,
         freeze: flags.freeze,
-        dpr: flags.dpr !== undefined ? Number(flags.dpr) : undefined,
-        concurrency: flags.concurrency !== undefined ? Number(flags.concurrency) : undefined,
+        dpr: positiveNumber(flags.dpr, '--dpr'),
+        concurrency: positiveNumber(flags.concurrency, '--concurrency'),
       });
 
       for (const s of shots) {
