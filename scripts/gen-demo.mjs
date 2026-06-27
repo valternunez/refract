@@ -27,7 +27,7 @@ const lines = [
   [
     ['$ ', '#5eead4'],
     ['refract ', ink],
-    ['https://acme.example ', '#93c5fd'],
+    ['https://app.lumen.io ', '#93c5fd'],
     ['--viewports mobile,tablet,desktop', out],
   ],
   null,
@@ -39,7 +39,17 @@ const lines = [
   [
     ['  [error] ', '#f87171'],
     ['horizontal_overflow  ', ink],
-    ['scrollWidth=500 viewport=402', out],
+    ['scrollWidth=520 viewport=402', out],
+  ],
+  [
+    ['  [warn]  ', '#fbbf24'],
+    ['element_clipped  ', ink],
+    ['div#overflow-card', out],
+  ],
+  [
+    ['  [warn]  ', '#fbbf24'],
+    ['text_overflow  ', ink],
+    ['p#clipped', out],
   ],
   [
     ['  [warn]  ', '#fbbf24'],
@@ -48,51 +58,36 @@ const lines = [
   ],
   [
     ['  [warn]  ', '#fbbf24'],
-    ['text_overflow  ', ink],
-    ['p#clipped', out],
-  ],
-  [
-    ['  [warn]  ', '#fbbf24'],
     ['image_no_alt  ', ink],
     ['img#hero-img', out],
   ],
   null,
   [
-    ['tablet', ink],
+    ['tablet ', ink],
     ['  834×1210  ', dim],
-    ['refract-shots/tablet.png', dim],
+    ['refract-shots/tablet.png  ', dim],
+    ['3 findings', out],
   ],
-  [
-    ['  [warn]  ', '#fbbf24'],
-    ['text_overflow  ', ink],
-    ['p#clipped', out],
-  ],
-  null,
   [
     ['desktop', ink],
     ['  1512×982  ', dim],
-    ['refract-shots/desktop.png', dim],
-  ],
-  [
-    ['  [warn]  ', '#fbbf24'],
-    ['text_overflow  ', ink],
-    ['p#clipped', out],
+    ['refract-shots/desktop.png  ', dim],
+    ['2 findings', out],
   ],
   null,
   [
     ['✓ ', '#34d399'],
-    ['3 shots · 7 findings · ', ink],
-    ['1 error, 6 warnings', out],
+    ['3 shots · 10 findings · ', ink],
+    ['1 error, 9 warnings', out],
   ],
 ];
 
 // Cumulative reveal: [linesShown, delayMs].
 const steps = [
   [1, 900],
-  [7, 1200],
-  [10, 900],
-  [13, 900],
-  [15, 2800],
+  [8, 1200],
+  [11, 1000],
+  [13, 2800],
 ];
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
