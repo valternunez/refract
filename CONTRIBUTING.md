@@ -7,7 +7,7 @@ Thanks for helping! Refract is a pnpm monorepo targeting Node 20+.
 ```sh
 corepack enable pnpm                     # pnpm via corepack
 pnpm install
-pnpm exec playwright install chromium    # one-time, ~280MB
+pnpm exec playwright install chromium webkit   # one-time; webkit powers --engine webkit + its tests
 ```
 
 ## Develop

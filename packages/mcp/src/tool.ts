@@ -29,6 +29,9 @@ To screenshot pages behind a login, pass storageState — a saved Playwright aut
 (cookies + localStorage), e.g. render_responsive({ url, storageState: "./auth.json" }).
 Generate one once with \`npx playwright codegen --save-storage=auth.json <url>\`.
 
+To check the real Safari/WebKit engine (≈ iOS Safari), pass engine: "webkit"
+(render_responsive({ url, engine: "webkit" })) — install it once with \`npx playwright install webkit\`.
+
 This tool does NOT drive a general-purpose browser — it cannot click, type, navigate,
 or perform a login flow. It can reuse a saved auth state (storageState) to render a
 page that is already logged in, but it cannot log in for you. It renders a URL at fixed
@@ -67,6 +70,12 @@ export const renderResponsiveSchema = {
     .optional()
     .describe(
       'Path to a Playwright storage-state JSON (cookies + localStorage) to render the page logged in. Generate with `npx playwright codegen --save-storage=auth.json <url>`.',
+    ),
+  engine: z
+    .enum(['chromium', 'webkit'])
+    .optional()
+    .describe(
+      'Rendering engine — webkit ≈ iOS Safari. Default chromium. Needs `npx playwright install webkit` once.',
     ),
 };
 

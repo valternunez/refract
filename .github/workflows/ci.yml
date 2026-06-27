@@ -19,6 +19,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm build
-      # render() tests drive a real headless browser.
-      - run: pnpm --filter @getrefractjs/core exec playwright install --with-deps chromium
+      # render() tests drive real headless browsers (Chromium + the WebKit engine).
+      - run: pnpm --filter @getrefractjs/core exec playwright install --with-deps chromium webkit
       - run: pnpm test

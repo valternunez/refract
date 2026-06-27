@@ -18,6 +18,7 @@ interface Flags {
   dpr?: string;
   concurrency?: string;
   storageState?: string;
+  engine?: string;
 }
 
 interface DiffFlags extends Flags {
@@ -36,6 +37,15 @@ function positiveNumber(value: string | undefined, flag: string): number | undef
   return n;
 }
 
+/** Validate the optional --engine flag, teaching the user the valid choices. */
+function parseEngine(value: string | undefined): 'chromium' | 'webkit' | undefined {
+  if (value === undefined) return undefined;
+  if (value !== 'chromium' && value !== 'webkit') {
+    throw new Error(`--engine must be chromium or webkit, got "${value}".`);
+  }
+  return value;
+}
+
 /** Apply the render flags shared by the default command and `diff`. */
 function addRenderFlags(cmd: Command): Command {
   return cmd
@@ -51,7 +61,8 @@ function addRenderFlags(cmd: Command): Command {
     .option('--inject-css <css>', 'Inject CSS before capture (e.g. hide flaky elements)')
     .option('--dpr <n>', 'Override device scale factor (e.g. 1 for smaller files)')
     .option('--concurrency <n>', 'Max viewports rendered in parallel')
-    .option('--storage-state <path>', 'Playwright storage-state JSON to render logged in');
+    .option('--storage-state <path>', 'Playwright storage-state JSON to render logged in')
+    .option('--engine <name>', 'Rendering engine: chromium (default) or webkit (Safari)');
 }
 
 /** Build the shared {@link RenderOptions} from parsed flags. */
@@ -72,6 +83,7 @@ function renderOptions(url: string, flags: Flags): RenderOptions {
     dpr: positiveNumber(flags.dpr, '--dpr'),
     concurrency: positiveNumber(flags.concurrency, '--concurrency'),
     storageState: flags.storageState,
+    engine: parseEngine(flags.engine),
   };
 }
 

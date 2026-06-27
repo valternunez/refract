@@ -18,4 +18,4 @@ for (const shot of shots) {
 ```
 
 Everything is optional except `url`. Needs Chromium once:
-`pnpm exec playwright install chromium`. MIT licensed.
+`pnpm exec playwright install chromium` (add `webkit` for `engine: "webkit"`). MIT licensed.

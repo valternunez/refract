@@ -5,6 +5,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- **WebKit engine (`--engine`).** Render with the real Safari/WebKit engine (≈ iOS
+  Safari) via `engine: "webkit"` (core), `--engine webkit` (CLI, incl. `refract diff`),
+  or `engine` (MCP `render_responsive`/`diff_responsive`). Default stays `chromium`;
+  install WebKit once with `npx playwright install webkit`. A missing engine returns a
+  teaching error. Firefox is intentionally not supported yet.
+
 ### Changed
 - **`text_overflow` ignores intentional ellipsis truncation.** Elements with
   `text-overflow: ellipsis` (the `.truncate` utility) are designed to truncate, so

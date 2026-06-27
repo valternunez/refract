@@ -10,4 +10,4 @@ Renders the URL at each viewport to `./shots/{preset}.png` and prints structured
 findings (overflow, small tap targets, clipped text, missing `alt`) under each shot.
 
 Flags: `--viewports`, `--out`, `--selector`, `--freeze`, `--dpr`, `--concurrency`.
-Needs Chromium once: `npx playwright install chromium`. MIT licensed.
+Needs Chromium once: `npx playwright install chromium` (add `webkit` for `--engine webkit`). MIT licensed.

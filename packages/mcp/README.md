@@ -11,4 +11,4 @@ responsive QA without scripting a browser.
 response: structured **findings** (JSON keyed by preset), absolute saved paths, and
 a downscaled preview image per viewport. Load failures come back as teaching errors.
 
-Needs Chromium once: `npx playwright install chromium`. MIT licensed.
+Needs Chromium once: `npx playwright install chromium` (add `webkit` for `engine: "webkit"`). MIT licensed.

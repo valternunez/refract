@@ -34,7 +34,7 @@ refract https://example.com --viewports mobile,tablet,desktop --out ./shots
 Outputs `./shots/{preset}.png`, one per viewport, and prints findings under each.
 Flags: `--viewports`, `--out`, `--selector`, `--wait-for`, `--wait-for-function`,
 `--wait-for-network-idle-ms`, `--freeze`, `--inject-css`, `--dpr`, `--concurrency`,
-`--storage-state`.
+`--storage-state`, `--engine`.
 
 Use `--inject-css "#clock,.ad{visibility:hidden}"` to hide dynamic or flaky elements
 before capture — handy for clean, stable diffs (and the hidden elements stop showing
@@ -203,8 +203,25 @@ the `diff_responsive` tool.)
   *can* reuse a saved auth state (`--storage-state`) to render a logged-in page,
   but it won't log in for you.
 - ❌ A visual-regression engine reinvented from scratch (it wraps `pixelmatch`).
-- ❌ A real-device cloud. Playwright **emulates** viewport, DPR, UA, and touch —
-  not the GPU or iOS's actual WebKit. It does not replace BrowserStack.
+- ❌ A real-device cloud. Playwright **emulates** viewport, DPR, UA, and touch, and
+  `--engine webkit` runs the **real WebKit engine** (close to iOS Safari) — but it's
+  still desktop WebKit, not an actual iOS device or GPU. It does not replace BrowserStack.
+
+## Cross-browser
+
+Renders on **Chromium by default**; pass `--engine webkit` (or `engine: "webkit"` in the
+library / MCP) to render with the **real Safari/WebKit engine** — the closest local proxy
+to iOS Safari, where a lot of responsive bugs actually show up.
+
+```sh
+npx playwright install webkit          # one-time, ~70MB
+refract https://example.com --engine webkit
+```
+
+It works everywhere a render does (CLI, library, MCP `render_responsive` / `diff_responsive`).
+For visual diffs, keep a separate baseline dir per engine (`--baseline ./baseline-webkit`)
+since engines render slightly differently. Firefox isn't supported yet (it can't emulate
+`isMobile` and ignores DPR) — open an issue if you need it.
 
 ## Security
 

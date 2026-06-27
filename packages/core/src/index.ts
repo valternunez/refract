@@ -8,7 +8,7 @@
 import { mkdir, readFile } from 'node:fs/promises';
 import { cpus } from 'node:os';
 import { join, resolve } from 'node:path';
-import { type Browser, type Page, type Response, chromium } from 'playwright';
+import { type Browser, type Page, type Response, chromium, webkit } from 'playwright';
 import { type Finding, collectFindings } from './findings';
 import { type ResolvedViewport, resolveViewport } from './presets';
 
@@ -19,6 +19,12 @@ export { diffShots, writeDiffReport } from './diff';
 
 /** A target viewport: either a preset name (`"iphone-15"`, `"mobile"`) or `WxH` (`"375x667"`). */
 export type Viewport = string;
+
+/** Rendering engine. `webkit` is the real Safari/WebKit engine — the closest proxy to iOS Safari. */
+export type Engine = 'chromium' | 'webkit';
+
+/** Playwright browser type per engine. */
+const ENGINES = { chromium, webkit };
 
 /** Options for {@link render}. Everything optional except `url` — defaults must be right. */
 export interface RenderOptions {
@@ -54,6 +60,11 @@ export interface RenderOptions {
   dpr?: number;
   /** Max viewports rendered in parallel. Defaults to `os.cpus().length`. */
   concurrency?: number;
+  /**
+   * Rendering engine. Defaults to `chromium`. `webkit` uses the real Safari/WebKit
+   * engine (≈ iOS Safari) — install it once with `npx playwright install webkit`.
+   */
+  engine?: Engine;
   /**
    * Path to a Playwright storage-state JSON (cookies + localStorage) so the page
    * renders **logged in**. Use the standard Playwright format — generate one with
@@ -112,7 +123,12 @@ export async function render(options: RenderOptions): Promise<Shot[]> {
     dpr,
     concurrency = cpus().length,
     storageState,
+    engine = 'chromium',
   } = options;
+
+  if (!ENGINES[engine]) {
+    throw new Error(`Unknown engine "${engine}". Valid engines: chromium, webkit.`);
+  }
 
   const resolved = viewports.map(resolveViewport); // throws teaching error on bad token
   const outDir = resolve(out);
@@ -144,7 +160,18 @@ export async function render(options: RenderOptions): Promise<Shot[]> {
       group.aliases.push(vp.name);
   }
 
-  const browser = await chromium.launch(); // ONE browser, N contexts
+  let browser: Browser; // ONE browser, N contexts
+  try {
+    browser = await ENGINES[engine].launch();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (/install|Executable doesn't exist/i.test(message)) {
+      throw new Error(
+        `Browser engine "${engine}" isn't installed. Run \`npx playwright install ${engine}\` and try again.`,
+      );
+    }
+    throw err;
+  }
   try {
     return await mapPool([...groups.values()], Math.max(1, concurrency), (g) =>
       renderOne(browser, url, g.canonical, g.aliases, {
