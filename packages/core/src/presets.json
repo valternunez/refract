@@ -1,0 +1,171 @@
+{
+  "groups": {
+    "mobile": "iphone-17",
+    "tablet": "ipad-pro-11",
+    "desktop": "macbook-pro-14"
+  },
+  "presets": {
+    "iphone-17-pro-max": {
+      "width": 440,
+      "height": 956,
+      "deviceScaleFactor": 3,
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1",
+      "hasTouch": true,
+      "isMobile": true
+    },
+    "iphone-17-pro": {
+      "width": 402,
+      "height": 874,
+      "deviceScaleFactor": 3,
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1",
+      "hasTouch": true,
+      "isMobile": true
+    },
+    "iphone-17": {
+      "width": 402,
+      "height": 874,
+      "deviceScaleFactor": 3,
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1",
+      "hasTouch": true,
+      "isMobile": true
+    },
+    "iphone-15": {
+      "width": 393,
+      "height": 852,
+      "deviceScaleFactor": 3,
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+      "hasTouch": true,
+      "isMobile": true
+    },
+    "iphone-se": {
+      "width": 375,
+      "height": 667,
+      "deviceScaleFactor": 2,
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+      "hasTouch": true,
+      "isMobile": true
+    },
+    "galaxy-s26-ultra": {
+      "width": 412,
+      "height": 891,
+      "deviceScaleFactor": 3.5,
+      "userAgent": "Mozilla/5.0 (Linux; Android 16; SM-S948B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36",
+      "hasTouch": true,
+      "isMobile": true
+    },
+    "pixel-10-pro": {
+      "width": 448,
+      "height": 998,
+      "deviceScaleFactor": 2.625,
+      "userAgent": "Mozilla/5.0 (Linux; Android 16; Pixel 10 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36",
+      "hasTouch": true,
+      "isMobile": true,
+      "_note": "CSS viewport approximate: Pixel 10 Pro shares the 6.3in 1280x2856 panel of the Pixel 9 Pro; exact logical viewport not authoritatively documented. Derived from physical width / DPR 2.625 (~448 CSS px). Verify against a real device when available."
+    },
+    "pixel-8": {
+      "width": 412,
+      "height": 915,
+      "deviceScaleFactor": 2.625,
+      "userAgent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36",
+      "hasTouch": true,
+      "isMobile": true
+    },
+    "ipad-pro-13": {
+      "width": 1032,
+      "height": 1376,
+      "deviceScaleFactor": 2,
+      "userAgent": "Mozilla/5.0 (iPad; CPU OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1",
+      "hasTouch": true,
+      "isMobile": true
+    },
+    "ipad-pro-11": {
+      "width": 834,
+      "height": 1210,
+      "deviceScaleFactor": 2,
+      "userAgent": "Mozilla/5.0 (iPad; CPU OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1",
+      "hasTouch": true,
+      "isMobile": true,
+      "_note": "Height approximate: iPad Pro 11in M4 reported as 834 CSS px wide @2 DPR; portrait height ~1210 derived from 2420 physical / 2. Width verified, exact logical height varies slightly by source."
+    },
+    "ipad-mini": {
+      "width": 744,
+      "height": 1133,
+      "deviceScaleFactor": 2,
+      "userAgent": "Mozilla/5.0 (iPad; CPU OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1",
+      "hasTouch": true,
+      "isMobile": true
+    },
+    "macbook-pro-14": {
+      "width": 1512,
+      "height": 982,
+      "deviceScaleFactor": 2,
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+      "hasTouch": false,
+      "isMobile": false
+    },
+    "macbook-pro-16": {
+      "width": 1728,
+      "height": 1117,
+      "deviceScaleFactor": 2,
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+      "hasTouch": false,
+      "isMobile": false
+    },
+    "macbook-air-13": {
+      "width": 1280,
+      "height": 832,
+      "deviceScaleFactor": 2,
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+      "hasTouch": false,
+      "isMobile": false
+    },
+    "desktop-1440": {
+      "width": 1440,
+      "height": 900,
+      "deviceScaleFactor": 1,
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+      "hasTouch": false,
+      "isMobile": false
+    },
+    "desktop-1080p": {
+      "width": 1920,
+      "height": 1080,
+      "deviceScaleFactor": 1,
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+      "hasTouch": false,
+      "isMobile": false
+    },
+    "desktop-1366": {
+      "width": 1366,
+      "height": 768,
+      "deviceScaleFactor": 1,
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+      "hasTouch": false,
+      "isMobile": false
+    },
+    "desktop-1280": {
+      "width": 1280,
+      "height": 800,
+      "deviceScaleFactor": 1,
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+      "hasTouch": false,
+      "isMobile": false
+    },
+    "desktop-1440p": {
+      "width": 2560,
+      "height": 1440,
+      "deviceScaleFactor": 1,
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+      "hasTouch": false,
+      "isMobile": false
+    },
+    "desktop-4k": {
+      "width": 3840,
+      "height": 2160,
+      "deviceScaleFactor": 1,
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+      "hasTouch": false,
+      "isMobile": false
+    }
+  }
+}
