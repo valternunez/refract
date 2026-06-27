@@ -133,6 +133,22 @@ screenshots — agents act on these instead of eyeballing pixels:
 
 The CLI prints them under each shot; the MCP tool returns them as JSON keyed by preset.
 
+### Token footprint
+
+Findings-first responses and downscaled previews aren't just nice-to-haves — they
+keep the agent's context window alive. Measured on the demo-site (3 viewports), one
+`render_responsive` response costs roughly:
+
+| response shape | Claude | GPT-4o | Gemini |
+|---|---|---|---|
+| findings only (no images) | ~620 | ~620 | ~620 |
+| **downscaled previews** (default) | **~4.2k** | ~4.0k | ~3.7k |
+| full-resolution images (naive) | ~17.7k | ~4.3k | ~8.9k |
+
+So Refract's default is **~76% smaller than dumping full-res screenshots** on Claude,
+and the structured findings alone are a few hundred tokens. Re-run anytime with
+`pnpm bench`; details + per-model formulas in [benchmarks/RESULTS.md](benchmarks/RESULTS.md).
+
 ## Visual diff
 
 `refract diff` catches *unintended* visual change across viewports — the "did my
