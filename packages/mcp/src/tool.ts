@@ -17,14 +17,16 @@ Example:
   → renders at mobile, tablet, and desktop; returns a downscaled preview image per
     viewport plus the absolute path to the full-resolution PNG saved on disk.
 
-It also returns structured findings per viewport — horizontal overflow, elements clipped past the viewport, clipped or truncated text, tap targets under 44×44 on mobile, and images missing alt — so you can act on issues without eyeballing pixels.
+It also returns structured findings per viewport — horizontal overflow, elements clipped past the viewport, clipped or truncated text, tap targets under 44×44 on mobile, and images missing alt — so you can act on issues without eyeballing pixels. A finding looks like { type: "horizontal_overflow", severity: "error", detail: "scrollWidth=420 viewport=375", selector: "div.card" }.
 
 You can narrow viewports (render_responsive({ url, viewports: ["iphone-15", "1440x900"] }))
 and clip to one element (render_responsive({ url, selector: ".hero" })).
 
 This tool does NOT drive a general-purpose browser — it cannot click, type, log in,
 or navigate. It renders a URL at fixed viewports and returns images. For scripted
-browser interaction use a Playwright/Puppeteer MCP instead.`;
+browser interaction use a Playwright/Puppeteer MCP instead.
+
+Security: it loads ANY url you give it — including file:// (local files) and internal/private hosts — and returns the rendered pixels. Do not point it at untrusted or sensitive URLs.`;
 
 /** Input shape for `render_responsive`, shared with the MCP tool registration. */
 export const renderResponsiveSchema = {
