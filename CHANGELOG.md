@@ -6,6 +6,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **Wait helpers (`waitForFunction`, `networkIdleMs`).** Gate capture on an
+  app-specific readiness predicate — a JS expression polled in the page until
+  truthy (`waitForFunction` core, `--wait-for-function` CLI, `waitForFunction` MCP),
+  with a teaching error if it never resolves. And make the best-effort network-idle
+  wait's cap configurable (`networkIdleMs` core, `--wait-for-network-idle-ms` CLI,
+  `networkIdleMs` MCP; default still 10000, still swallowed on expiry).
 - **Authenticated pages (`storageState`).** Render logged-in pages by reusing a
   Playwright storage-state JSON (cookies + localStorage) — the standard format,
   generated with `playwright codegen --save-storage`. Exposed as `storageState`

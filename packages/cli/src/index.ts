@@ -9,6 +9,8 @@ interface Flags {
   out: string;
   selector?: string;
   waitFor?: string;
+  waitForFunction?: string;
+  waitForNetworkIdleMs?: string;
   freeze?: boolean;
   dpr?: string;
   concurrency?: string;
@@ -33,6 +35,8 @@ cli
   .option('--out <dir>', 'Output directory', { default: './refract-shots' })
   .option('--selector <css>', 'Clip to a single element')
   .option('--wait-for <css>', 'Wait for this selector before capturing')
+  .option('--wait-for-function <js>', 'Wait until this JS expression is truthy before capturing')
+  .option('--wait-for-network-idle-ms <n>', 'Cap (ms) for the network-idle wait')
   .option('--freeze', 'Disable animations and force eager image loading')
   .option('--dpr <n>', 'Override device scale factor (e.g. 1 for smaller files)')
   .option('--concurrency <n>', 'Max viewports rendered in parallel')
@@ -50,6 +54,8 @@ cli
         out: flags.out,
         selector: flags.selector,
         waitFor: flags.waitFor,
+        waitForFunction: flags.waitForFunction,
+        networkIdleMs: positiveNumber(flags.waitForNetworkIdleMs, '--wait-for-network-idle-ms'),
         freeze: flags.freeze,
         dpr: positiveNumber(flags.dpr, '--dpr'),
         concurrency: positiveNumber(flags.concurrency, '--concurrency'),

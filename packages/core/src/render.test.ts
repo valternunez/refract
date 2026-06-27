@@ -96,4 +96,41 @@ describe('render', () => {
     });
     expect(shots).toHaveLength(1);
   });
+
+  it('captures once waitForFunction is truthy', { timeout: 30000 }, async () => {
+    const shots = await render({
+      url: demo,
+      viewports: ['400x800'],
+      out: outDir,
+      dpr: 1,
+      waitForFunction: 'document.readyState === "complete"',
+    });
+    expect(shots).toHaveLength(1);
+  });
+
+  it('teaches when waitForFunction never becomes truthy', { timeout: 15000 }, async () => {
+    await expect(
+      render({
+        url: demo,
+        viewports: ['400x800'],
+        out: outDir,
+        waitForFunction: 'window.__never_ever_xyz === 42',
+      }),
+    ).rejects.toThrow(/waitForFunction.*truthy/is);
+  });
+
+  it(
+    'treats a tiny networkIdleMs cap as best-effort, not a failure',
+    { timeout: 30000 },
+    async () => {
+      const shots = await render({
+        url: demo,
+        viewports: ['400x800'],
+        out: outDir,
+        dpr: 1,
+        networkIdleMs: 1,
+      });
+      expect(shots).toHaveLength(1);
+    },
+  );
 });

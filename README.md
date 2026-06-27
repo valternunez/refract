@@ -32,7 +32,12 @@ refract https://example.com --viewports mobile,tablet,desktop --out ./shots
 ```
 
 Outputs `./shots/{preset}.png`, one per viewport, and prints findings under each.
-Flags: `--viewports`, `--out`, `--selector`, `--wait-for`, `--freeze`, `--dpr`, `--concurrency`, `--storage-state`.
+Flags: `--viewports`, `--out`, `--selector`, `--wait-for`, `--wait-for-function`,
+`--wait-for-network-idle-ms`, `--freeze`, `--dpr`, `--concurrency`, `--storage-state`.
+
+When the page is ready only after an app-specific signal, gate the capture with
+`--wait-for-function "window.__ready === true"`; for slow pages, raise the
+network-idle cap with `--wait-for-network-idle-ms 30000` (it stays best-effort).
 
 Viewports that render identically (e.g. `iphone-17-pro` and `iphone-16-pro` are both
 402×874 @3) are rendered **once** and bundled into a single result, with the extra

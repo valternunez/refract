@@ -20,7 +20,8 @@ Example:
 It also returns structured findings per viewport — horizontal overflow, elements clipped past the viewport, clipped or truncated text, tap targets under 44×44 on mobile, and images missing alt — so you can act on issues without eyeballing pixels. A finding looks like { type: "horizontal_overflow", severity: "error", detail: "scrollWidth=420 viewport=375", selector: "div.card" }.
 
 You can narrow viewports (render_responsive({ url, viewports: ["iphone-15", "1440x900"] }))
-and clip to one element (render_responsive({ url, selector: ".hero" })).
+and clip to one element (render_responsive({ url, selector: ".hero" })). If the page is
+ready only after some app-specific signal, gate on it with waitForFunction (render_responsive({ url, waitForFunction: "window.__ready === true" })).
 
 To screenshot pages behind a login, pass storageState — a saved Playwright auth state
 (cookies + localStorage), e.g. render_responsive({ url, storageState: "./auth.json" }).
@@ -43,6 +44,16 @@ export const renderResponsiveSchema = {
   selector: z.string().optional().describe('CSS selector to clip the screenshot to one element.'),
   freeze: z.boolean().optional().describe('Disable animations and force eager image loading.'),
   waitFor: z.string().optional().describe('Wait for this selector before capturing.'),
+  waitForFunction: z
+    .string()
+    .optional()
+    .describe(
+      'JS expression polled in the page until truthy before capturing (e.g. "window.__ready === true").',
+    ),
+  networkIdleMs: z
+    .number()
+    .optional()
+    .describe('Cap in ms for the best-effort network-idle wait (default 10000).'),
   storageState: z
     .string()
     .optional()

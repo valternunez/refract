@@ -30,6 +30,15 @@ export interface RenderOptions {
   freeze?: boolean;
   /** Explicit gate: wait for this selector before capturing. */
   waitFor?: string;
+  /**
+   * Explicit gate: a JS expression polled in the page until it returns truthy
+   * before capturing (e.g. `'window.__ready === true'`). For app-specific
+   * readiness the smart waits can't detect. Throws a teaching error if it never
+   * becomes truthy within 10s.
+   */
+  waitForFunction?: string;
+  /** Cap (ms) for the best-effort network-idle wait. Defaults to `10000`. */
+  networkIdleMs?: number;
   /** Output directory for full-res PNGs. Defaults to `./refract-shots`. */
   out?: string;
   /** Override each viewport's deviceScaleFactor (e.g. `1` for smaller files). */
@@ -73,7 +82,8 @@ export interface Shot {
  *
  * Launches a single Chromium browser and creates one context per unique render,
  * in parallel (capped at `concurrency`). Throws a teaching error for unknown
- * viewport tokens, unreachable URLs, and missing `waitFor` selectors.
+ * viewport tokens, unreachable URLs, missing `waitFor` selectors, unresolved
+ * `waitForFunction` predicates, and unreadable `storageState` files.
  *
  * @example
  * const shots = await render({ url: 'http://localhost:3000' });
@@ -86,6 +96,8 @@ export async function render(options: RenderOptions): Promise<Shot[]> {
     selector,
     freeze = false,
     waitFor,
+    waitForFunction,
+    networkIdleMs,
     out = './refract-shots',
     dpr,
     concurrency = cpus().length,
@@ -129,6 +141,8 @@ export async function render(options: RenderOptions): Promise<Shot[]> {
         selector,
         freeze,
         waitFor,
+        waitForFunction,
+        networkIdleMs,
         outDir,
         dpr,
         storageState: statePath,
@@ -143,6 +157,8 @@ interface RenderOneOpts {
   selector?: string;
   freeze: boolean;
   waitFor?: string;
+  waitForFunction?: string;
+  networkIdleMs?: number;
   outDir: string;
   dpr?: number;
   /** Absolute path to a validated Playwright storage-state JSON, or undefined. */
@@ -168,7 +184,7 @@ async function renderOne(
   try {
     const page = await context.newPage();
     await navigate(page, url);
-    await smartWaits(page, opts.waitFor);
+    await smartWaits(page, opts);
     if (opts.freeze) await applyFreeze(page);
 
     const savedPath = join(opts.outDir, `${vp.name}.png`);
@@ -223,20 +239,42 @@ async function navigate(page: Page, url: string): Promise<void> {
   }
 }
 
-/** Apply the smart-wait stack: networkidle (best-effort), fonts, layout settle, optional selector. */
-async function smartWaits(page: Page, waitFor?: string): Promise<void> {
+interface WaitOpts {
+  waitFor?: string;
+  waitForFunction?: string;
+  networkIdleMs?: number;
+}
+
+/**
+ * Apply the smart-wait stack: networkidle (best-effort, capped by `networkIdleMs`),
+ * fonts, layout settle, then optional selector and JS-predicate gates.
+ */
+async function smartWaits(page: Page, opts: WaitOpts): Promise<void> {
   // networkidle is a lie — some apps poll forever, so swallow the timeout.
-  await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
+  await page
+    .waitForLoadState('networkidle', { timeout: opts.networkIdleMs ?? 10000 })
+    .catch(() => {});
   await page.evaluate(() => document.fonts.ready);
   await settleLayout(page);
 
-  if (waitFor) {
+  if (opts.waitFor) {
     try {
-      await page.waitForSelector(waitFor, { timeout: 10000 });
+      await page.waitForSelector(opts.waitFor, { timeout: 10000 });
     } catch {
       // Errors teach: name the selector and point at concrete fixes.
       throw new Error(
-        `waitFor selector "${waitFor}" never appeared within 10s — check it is spelled correctly and actually renders on this page (try freeze: true if it animates in).`,
+        `waitFor selector "${opts.waitFor}" never appeared within 10s — check it is spelled correctly and actually renders on this page (try freeze: true if it animates in).`,
+      );
+    }
+  }
+
+  if (opts.waitForFunction) {
+    try {
+      // A string pageFunction is polled as a JS expression in the page context.
+      await page.waitForFunction(opts.waitForFunction, undefined, { timeout: 10000 });
+    } catch {
+      throw new Error(
+        `waitForFunction "${opts.waitForFunction}" did not become truthy within 10s — check the expression is valid and eventually returns a truthy value on this page (it is polled as a JS expression in the page).`,
       );
     }
   }
