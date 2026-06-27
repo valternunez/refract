@@ -6,6 +6,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **Authenticated pages (`storageState`).** Render logged-in pages by reusing a
+  Playwright storage-state JSON (cookies + localStorage) — the standard format,
+  generated with `playwright codegen --save-storage`. Exposed as `storageState`
+  (core `render()`), `--storage-state <path>` (CLI), and a `storageState` argument
+  (MCP `render_responsive`). A missing/malformed file fails fast with a teaching
+  error that shows how to generate one. The file's cookies are sent to the target
+  URL — documented in the README Security note and the MCP tool description.
 - **Identical-render bundling.** Viewports that resolve to the same geometry + DPR
   + touch (differing only by user-agent — e.g. `iphone-17-pro`/`iphone-16-pro`,
   the four 412×915 Pixels) render **once** and come back as a single `Shot` with

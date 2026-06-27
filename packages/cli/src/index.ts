@@ -12,6 +12,7 @@ interface Flags {
   freeze?: boolean;
   dpr?: string;
   concurrency?: string;
+  storageState?: string;
 }
 
 /** Parse an optional numeric flag, teaching the user when it isn't a positive number. */
@@ -35,6 +36,7 @@ cli
   .option('--freeze', 'Disable animations and force eager image loading')
   .option('--dpr <n>', 'Override device scale factor (e.g. 1 for smaller files)')
   .option('--concurrency <n>', 'Max viewports rendered in parallel')
+  .option('--storage-state <path>', 'Playwright storage-state JSON to render logged in')
   .action(async (url: string, flags: Flags) => {
     try {
       const viewports = flags.viewports
@@ -51,6 +53,7 @@ cli
         freeze: flags.freeze,
         dpr: positiveNumber(flags.dpr, '--dpr'),
         concurrency: positiveNumber(flags.concurrency, '--concurrency'),
+        storageState: flags.storageState,
       });
 
       for (const s of shots) {

@@ -22,11 +22,16 @@ It also returns structured findings per viewport — horizontal overflow, elemen
 You can narrow viewports (render_responsive({ url, viewports: ["iphone-15", "1440x900"] }))
 and clip to one element (render_responsive({ url, selector: ".hero" })).
 
-This tool does NOT drive a general-purpose browser — it cannot click, type, log in,
-or navigate. It renders a URL at fixed viewports and returns images. For scripted
-browser interaction use a Playwright/Puppeteer MCP instead.
+To screenshot pages behind a login, pass storageState — a saved Playwright auth state
+(cookies + localStorage), e.g. render_responsive({ url, storageState: "./auth.json" }).
+Generate one once with \`npx playwright codegen --save-storage=auth.json <url>\`.
 
-Security: it loads ANY url you give it — including file:// (local files) and internal/private hosts — and returns the rendered pixels. Do not point it at untrusted or sensitive URLs.`;
+This tool does NOT drive a general-purpose browser — it cannot click, type, navigate,
+or perform a login flow. It can reuse a saved auth state (storageState) to render a
+page that is already logged in, but it cannot log in for you. It renders a URL at fixed
+viewports and returns images. For scripted browser interaction use a Playwright/Puppeteer MCP instead.
+
+Security: it loads ANY url you give it — including file:// (local files) and internal/private hosts — and returns the rendered pixels. The storageState file's cookies are sent to url, so never pair an auth file from one origin with an untrusted url. Do not point it at untrusted or sensitive URLs.`;
 
 /** Input shape for `render_responsive`, shared with the MCP tool registration. */
 export const renderResponsiveSchema = {
@@ -38,6 +43,12 @@ export const renderResponsiveSchema = {
   selector: z.string().optional().describe('CSS selector to clip the screenshot to one element.'),
   freeze: z.boolean().optional().describe('Disable animations and force eager image loading.'),
   waitFor: z.string().optional().describe('Wait for this selector before capturing.'),
+  storageState: z
+    .string()
+    .optional()
+    .describe(
+      'Path to a Playwright storage-state JSON (cookies + localStorage) to render the page logged in. Generate with `npx playwright codegen --save-storage=auth.json <url>`.',
+    ),
 };
 
 type RenderResponsiveArgs = z.infer<z.ZodObject<typeof renderResponsiveSchema>>;

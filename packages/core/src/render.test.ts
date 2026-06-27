@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -70,5 +70,30 @@ describe('render', () => {
     // Only the two canonical files were written (no iphone-16-pro.png).
     const files = (await readdir(outDir)).sort();
     expect(files).toEqual(['iphone-15.png', 'iphone-17-pro.png']);
+  });
+
+  it('teaches how to fix a missing storage-state file', async () => {
+    await expect(
+      render({
+        url: demo,
+        viewports: ['400x800'],
+        out: outDir,
+        storageState: join(outDir, 'nope.json'),
+      }),
+    ).rejects.toThrow(/storage-state.*playwright codegen/is);
+  });
+
+  it('renders with a valid storage-state file', { timeout: 30000 }, async () => {
+    const statePath = join(outDir, 'auth.json');
+    await writeFile(statePath, JSON.stringify({ cookies: [], origins: [] }));
+
+    const shots = await render({
+      url: demo,
+      viewports: ['400x800'],
+      out: outDir,
+      dpr: 1,
+      storageState: statePath,
+    });
+    expect(shots).toHaveLength(1);
   });
 });

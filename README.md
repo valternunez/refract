@@ -32,7 +32,7 @@ refract https://example.com --viewports mobile,tablet,desktop --out ./shots
 ```
 
 Outputs `./shots/{preset}.png`, one per viewport, and prints findings under each.
-Flags: `--viewports`, `--out`, `--selector`, `--wait-for`, `--freeze`, `--dpr`, `--concurrency`.
+Flags: `--viewports`, `--out`, `--selector`, `--wait-for`, `--freeze`, `--dpr`, `--concurrency`, `--storage-state`.
 
 Viewports that render identically (e.g. `iphone-17-pro` and `iphone-16-pro` are both
 402×874 @3) are rendered **once** and bundled into a single result, with the extra
@@ -77,6 +77,35 @@ Working in this repo? A committed `.mcp.json` registers the local server
 (`node packages/mcp/dist/index.js`) — run `pnpm build` first and restart your
 client so it picks the tool up.
 
+## Authenticated pages
+
+Most real apps live behind a login. Refract renders logged-in pages by reusing a
+**Playwright storage-state** file (cookies + localStorage) — the standard format,
+nothing Refract-specific. Generate one once by logging in:
+
+```sh
+npx playwright codegen --save-storage=auth.json https://your-app.com/login
+# log in in the window that opens, then close it
+```
+
+Then point any surface at it:
+
+```sh
+refract https://your-app.com/dashboard --storage-state ./auth.json
+```
+
+```ts
+await render({ url: 'https://your-app.com/dashboard', storageState: './auth.json' });
+```
+
+```js
+render_responsive({ url: 'https://your-app.com/dashboard', storageState: './auth.json' })
+```
+
+Already have Playwright auth states from your e2e suite (e.g. `e2e/.auth/*.json`)?
+Pass one straight through — no regeneration needed. The file's cookies are sent to
+the URL, so don't pair an auth file from one origin with an untrusted URL.
+
 ## Findings
 
 Every render returns structured findings per viewport **alongside** the
@@ -103,7 +132,9 @@ The CLI prints them under each shot; the MCP tool returns them as JSON keyed by 
 
 - ❌ A browser extension or live-preview app (that's Responsively's job).
 - ❌ A general-purpose browser-control MCP (that's `playwright-mcp`'s job). It
-  renders URLs at viewports; it cannot click, type, or log in.
+  renders URLs at viewports; it cannot click, type, or perform a login flow. It
+  *can* reuse a saved auth state (`--storage-state`) to render a logged-in page,
+  but it won't log in for you.
 - ❌ A visual-regression engine reinvented from scratch (it wraps `pixelmatch`).
 - ❌ A real-device cloud. Playwright **emulates** viewport, DPR, UA, and touch —
   not the GPU or iOS's actual WebKit. It does not replace BrowserStack.

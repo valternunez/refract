@@ -5,7 +5,7 @@
  * per viewport, rendered in parallel. See CLAUDE.md "V0.1".
  */
 
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import { cpus } from 'node:os';
 import { join, resolve } from 'node:path';
 import { type Browser, type Page, type Response, chromium } from 'playwright';
@@ -36,6 +36,14 @@ export interface RenderOptions {
   dpr?: number;
   /** Max viewports rendered in parallel. Defaults to `os.cpus().length`. */
   concurrency?: number;
+  /**
+   * Path to a Playwright storage-state JSON (cookies + localStorage) so the page
+   * renders **logged in**. Use the standard Playwright format — generate one with
+   * `npx playwright codegen --save-storage=auth.json <url>` or, in code,
+   * `await context.storageState({ path: 'auth.json' })`. The file's cookies are
+   * sent to `url`, so don't pair an auth file from one origin with an untrusted URL.
+   */
+  storageState?: string;
 }
 
 /** One rendered viewport. `image` is the full-resolution PNG buffer; `savedPath` is the absolute full-res path. */
@@ -81,11 +89,26 @@ export async function render(options: RenderOptions): Promise<Shot[]> {
     out = './refract-shots',
     dpr,
     concurrency = cpus().length,
+    storageState,
   } = options;
 
   const resolved = viewports.map(resolveViewport); // throws teaching error on bad token
   const outDir = resolve(out);
   await mkdir(outDir, { recursive: true });
+
+  // Validate the auth state once, up front, with an error that teaches — rather
+  // than letting a raw Playwright ENOENT surface from inside each worker.
+  let statePath: string | undefined;
+  if (storageState) {
+    statePath = resolve(storageState);
+    try {
+      JSON.parse(await readFile(statePath, 'utf8'));
+    } catch (err) {
+      throw new Error(
+        `Could not read storage-state file "${storageState}": ${(err as Error).message}. Generate one by logging in once: \`npx playwright codegen --save-storage=auth.json <url>\` (or in code: \`await context.storageState({ path: 'auth.json' })\`), then pass its path.`,
+      );
+    }
+  }
 
   // Bundle viewports that produce an identical render (same geometry + DPR + touch
   // + isMobile — they differ only by user-agent, which rarely affects layout). Each
@@ -102,7 +125,14 @@ export async function render(options: RenderOptions): Promise<Shot[]> {
   const browser = await chromium.launch(); // ONE browser, N contexts
   try {
     return await mapPool([...groups.values()], Math.max(1, concurrency), (g) =>
-      renderOne(browser, url, g.canonical, g.aliases, { selector, freeze, waitFor, outDir, dpr }),
+      renderOne(browser, url, g.canonical, g.aliases, {
+        selector,
+        freeze,
+        waitFor,
+        outDir,
+        dpr,
+        storageState: statePath,
+      }),
     );
   } finally {
     await browser.close();
@@ -115,6 +145,8 @@ interface RenderOneOpts {
   waitFor?: string;
   outDir: string;
   dpr?: number;
+  /** Absolute path to a validated Playwright storage-state JSON, or undefined. */
+  storageState?: string;
 }
 
 /** Render a single viewport in its own context, always closing the context. */
@@ -131,6 +163,7 @@ async function renderOne(
     userAgent: vp.userAgent,
     hasTouch: vp.hasTouch,
     isMobile: vp.isMobile,
+    storageState: opts.storageState,
   });
   try {
     const page = await context.newPage();

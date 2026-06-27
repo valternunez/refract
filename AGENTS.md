@@ -21,6 +21,16 @@ Each is 5–15 lines: when to use it, the calls in order, what to look for.
 2. Apply the change, re-render with the same args (filenames are deterministic `{preset}.png`).
 3. Diff the two `{preset}.png` sets. `freeze: true` removes animation flakiness.
 
+## Playbook: screenshot a page behind a login
+
+**When:** the page you need to verify is auth-gated (a dashboard, account settings).
+1. Get a Playwright storage-state JSON. If the project has e2e auth states (e.g.
+   `e2e/.auth/*.json`), use one of those. Otherwise a human runs once:
+   `npx playwright codegen --save-storage=auth.json <login-url>`, logs in, closes it.
+2. `render_responsive({ url: "https://app/dashboard", storageState: "./auth.json" })`
+3. The previews show the logged-in page (not the login wall); read findings as usual.
+   If you still see the login screen, the state is stale — regenerate it.
+
 ## Playbook: find horizontal overflow on a PR preview
 
 **When:** a deployed preview URL might overflow on mobile.
