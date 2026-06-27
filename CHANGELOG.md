@@ -6,6 +6,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **Two new findings heuristics.** `text_too_small` (warn) flags body text under 12px on a
+  mobile viewport — short labels/badges are ignored, so it's low-noise — and
+  `viewport_meta_missing` (error) flags a page with no `<meta name="viewport">`, which makes
+  phones render it at a desktop width and scale down. Both are mobile-only.
 - **Findings diff.** `refract diff` / MCP `diff_responsive` now report a per-viewport
   **findings delta** — which structured findings were *fixed* (gone since the baseline) or
   *regressed* (new) — alongside the pixel diff, so an agent can confirm a fix landed without

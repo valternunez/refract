@@ -92,13 +92,14 @@ describe('collectFindings false positives', () => {
     await browser.close();
   });
 
-  // Runs `html` in a 375×667 page and returns the findings.
-  async function findingsFor(html: string) {
-    const context = await browser.newContext({ viewport: { width: 375, height: 667 } });
+  // Runs `html` in a mobile (375×667) or desktop (1280×800) page and returns the findings.
+  async function findingsFor(html: string, isMobile = true) {
+    const viewport = isMobile ? { width: 375, height: 667 } : { width: 1280, height: 800 };
+    const context = await browser.newContext({ viewport });
     try {
       const page = await context.newPage();
       await page.setContent(html, { waitUntil: 'load' });
-      return { findings: await collectFindings(page, true), page, context };
+      return { findings: await collectFindings(page, isMobile), page, context };
     } catch (err) {
       await context.close();
       throw err;
@@ -211,4 +212,59 @@ describe('collectFindings false positives', () => {
       await context.close();
     }
   });
+
+  it('flags a small paragraph as text_too_small', { timeout: 30000 }, async () => {
+    const { findings, context } = await findingsFor(
+      '<p style="font-size:10px">a full sentence of body copy that is too small to read</p>',
+    );
+    try {
+      expect(findings.find((f) => f.type === 'text_too_small')).toBeDefined();
+    } finally {
+      await context.close();
+    }
+  });
+
+  it('does not flag 16px body text or a short tiny label', { timeout: 30000 }, async () => {
+    const big = await findingsFor(
+      '<p style="font-size:16px">a full sentence of readable body copy</p>',
+    );
+    try {
+      expect(big.findings.find((f) => f.type === 'text_too_small')).toBeUndefined();
+    } finally {
+      await big.context.close();
+    }
+    const label = await findingsFor('<span style="font-size:10px">Hi</span>'); // short → not body text
+    try {
+      expect(label.findings.find((f) => f.type === 'text_too_small')).toBeUndefined();
+    } finally {
+      await label.context.close();
+    }
+  });
+
+  it(
+    'flags a missing viewport meta on mobile, but not when present or on desktop',
+    { timeout: 30000 },
+    async () => {
+      const missing = await findingsFor('<div>hello</div>');
+      try {
+        expect(missing.findings.find((f) => f.type === 'viewport_meta_missing')).toBeDefined();
+      } finally {
+        await missing.context.close();
+      }
+      const present = await findingsFor(
+        '<meta name="viewport" content="width=device-width"><div>hello</div>',
+      );
+      try {
+        expect(present.findings.find((f) => f.type === 'viewport_meta_missing')).toBeUndefined();
+      } finally {
+        await present.context.close();
+      }
+      const desktop = await findingsFor('<div>hello</div>', false);
+      try {
+        expect(desktop.findings.find((f) => f.type === 'viewport_meta_missing')).toBeUndefined();
+      } finally {
+        await desktop.context.close();
+      }
+    },
+  );
 });

@@ -146,6 +146,8 @@ can zoom straight to what broke); `horizontal_overflow` names the element that c
 | `element_clipped` | warn | an element sticks out past the viewport edge |
 | `text_overflow` | warn | text is hard-clipped with no ellipsis (`scrollWidth > clientWidth`; intentional `text-overflow: ellipsis` truncation is ignored) |
 | `tap_target_small` | warn | an interactive element is under 44×44 (mobile viewports) |
+| `text_too_small` | warn | body text under 12px on a mobile viewport (short labels/badges are ignored) |
+| `viewport_meta_missing` | error | the page has no `<meta name="viewport">`, so phones render it at desktop width and scale down |
 | `image_no_alt` | warn | an `<img>` is missing its `alt` attribute |
 
 The CLI prints them under each shot; the MCP tool returns them as JSON keyed by preset.

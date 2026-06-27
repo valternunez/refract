@@ -7,6 +7,8 @@ export interface Finding {
     | 'element_clipped'
     | 'text_overflow'
     | 'tap_target_small'
+    | 'text_too_small'
+    | 'viewport_meta_missing'
     | 'image_no_alt';
   severity: 'error' | 'warn';
   /** Agent/human-readable explanation, e.g. "scrollWidth=480 viewport=402". */
@@ -201,9 +203,44 @@ function runChecks({ isMobile }: { isMobile: boolean }): Finding[] {
         };
       }),
     );
+
+    // 5. Text too small to read comfortably on a phone — mobile only. Gated on a real
+    //    sentence (≥12 chars) so legitimately-small short labels/badges/headers don't trip it.
+    const tiny = all.filter((el) => {
+      if (!visible(el)) return false;
+      const px = Number.parseFloat(getComputedStyle(el).fontSize);
+      if (!(px < 12)) return false;
+      const text = Array.from(el.childNodes)
+        .filter((n) => n.nodeType === 3)
+        .map((n) => n.textContent || '')
+        .join('')
+        .trim();
+      return text.length >= 12;
+    });
+    addCapped(
+      'text_too_small',
+      tiny.map((el) => ({
+        type: 'text_too_small' as const,
+        severity: 'warn' as const,
+        detail: `font-size=${Math.round(Number.parseFloat(getComputedStyle(el).fontSize))}px`,
+        selector: cssPath(el),
+        rect: rectOf(el),
+      })),
+    );
+
+    // 6. No <meta name="viewport"> — a mobile browser renders at a desktop width and
+    //    scales the whole page down. Page-level; reported on mobile where it bites.
+    if (!document.querySelector('meta[name="viewport"]')) {
+      findings.push({
+        type: 'viewport_meta_missing',
+        severity: 'error',
+        detail:
+          'no <meta name="viewport"> — mobile browsers render at a desktop width and scale down',
+      });
+    }
   }
 
-  // 5. Images missing alt (empty alt="" is valid/decorative — not flagged).
+  // 7. Images missing alt (empty alt="" is valid/decorative — not flagged).
   const noalt = Array.from(document.body.querySelectorAll('img')).filter(
     (img) => !img.hasAttribute('alt'),
   );
