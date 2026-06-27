@@ -133,4 +133,24 @@ describe('render', () => {
       expect(shots).toHaveLength(1);
     },
   );
+
+  it('applies injectCss before capture and findings', { timeout: 30000 }, async () => {
+    const had = (s: Awaited<ReturnType<typeof render>>[number]) =>
+      s.findings.some((f) => f.type === 'horizontal_overflow');
+
+    // The demo's #overflow-card (fixed 480px) overflows a phone viewport.
+    const [base] = await render({ url: demo, viewports: ['mobile'], out: outDir });
+    if (!base) throw new Error('expected one shot');
+    expect(had(base)).toBe(true);
+
+    // Hiding it via injectCss removes the overflow → no finding for it.
+    const [injected] = await render({
+      url: demo,
+      viewports: ['mobile'],
+      out: outDir,
+      injectCss: '#overflow-card{display:none}',
+    });
+    if (!injected) throw new Error('expected one shot');
+    expect(had(injected)).toBe(false);
+  });
 });

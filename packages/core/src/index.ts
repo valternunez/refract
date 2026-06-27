@@ -30,6 +30,13 @@ export interface RenderOptions {
   selector?: string;
   /** Disable animations/transitions and force eager image loading for deterministic shots. */
   freeze?: boolean;
+  /**
+   * CSS injected into the page just before capture — hide dynamic/flaky elements
+   * (clocks, live badges, ads) for stable diffs, or preview a style tweak. Applied
+   * after `freeze` and before findings, so a hidden element stops being flagged.
+   * @example injectCss: '#clock, .ad { visibility: hidden }'
+   */
+  injectCss?: string;
   /** Explicit gate: wait for this selector before capturing. */
   waitFor?: string;
   /**
@@ -97,6 +104,7 @@ export async function render(options: RenderOptions): Promise<Shot[]> {
     viewports = ['mobile', 'tablet', 'desktop'],
     selector,
     freeze = false,
+    injectCss,
     waitFor,
     waitForFunction,
     networkIdleMs,
@@ -142,6 +150,7 @@ export async function render(options: RenderOptions): Promise<Shot[]> {
       renderOne(browser, url, g.canonical, g.aliases, {
         selector,
         freeze,
+        injectCss,
         waitFor,
         waitForFunction,
         networkIdleMs,
@@ -158,6 +167,7 @@ export async function render(options: RenderOptions): Promise<Shot[]> {
 interface RenderOneOpts {
   selector?: string;
   freeze: boolean;
+  injectCss?: string;
   waitFor?: string;
   waitForFunction?: string;
   networkIdleMs?: number;
@@ -188,6 +198,9 @@ async function renderOne(
     await navigate(page, url);
     await smartWaits(page, opts);
     if (opts.freeze) await applyFreeze(page);
+    // After freeze, before capture+findings: user CSS can hide flaky elements so
+    // they neither show in the shot nor get flagged as findings.
+    if (opts.injectCss) await page.addStyleTag({ content: opts.injectCss });
 
     const savedPath = join(opts.outDir, `${vp.name}.png`);
     const image = opts.selector

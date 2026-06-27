@@ -33,7 +33,12 @@ refract https://example.com --viewports mobile,tablet,desktop --out ./shots
 
 Outputs `./shots/{preset}.png`, one per viewport, and prints findings under each.
 Flags: `--viewports`, `--out`, `--selector`, `--wait-for`, `--wait-for-function`,
-`--wait-for-network-idle-ms`, `--freeze`, `--dpr`, `--concurrency`, `--storage-state`.
+`--wait-for-network-idle-ms`, `--freeze`, `--inject-css`, `--dpr`, `--concurrency`,
+`--storage-state`.
+
+Use `--inject-css "#clock,.ad{visibility:hidden}"` to hide dynamic or flaky elements
+before capture — handy for clean, stable diffs (and the hidden elements stop showing
+up as findings too).
 
 When the page is ready only after an app-specific signal, gate the capture with
 `--wait-for-function "window.__ready === true"`; for slow pages, raise the

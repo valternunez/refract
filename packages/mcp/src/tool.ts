@@ -43,6 +43,12 @@ export const renderResponsiveSchema = {
     .describe('Preset names or WxH. Defaults to mobile, tablet, desktop.'),
   selector: z.string().optional().describe('CSS selector to clip the screenshot to one element.'),
   freeze: z.boolean().optional().describe('Disable animations and force eager image loading.'),
+  injectCss: z
+    .string()
+    .optional()
+    .describe(
+      'CSS injected before capture, e.g. to hide dynamic/flaky elements: "#clock{visibility:hidden}".',
+    ),
   waitFor: z.string().optional().describe('Wait for this selector before capturing.'),
   waitForFunction: z
     .string()

@@ -6,6 +6,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **`injectCss` / `--inject-css`.** Inject a CSS string into the page just before
+  capture — hide dynamic/flaky elements (clocks, live badges, ads) for stable diffs,
+  or preview a style tweak. Applied after `freeze` and before findings, so hidden
+  elements stop being flagged. Available in core, CLI (incl. `refract diff`), and the
+  MCP `render_responsive` tool.
 - **Visual diff (`refract diff`).** Baseline visual-regression: render a URL and
   compare each viewport against a saved baseline PNG with `pixelmatch`. Plain-folder
   baselines (`./refract-baseline/{preset}.png`); `--update` (re)writes them. Per
