@@ -129,9 +129,12 @@ function runChecks({ isMobile }: { isMobile: boolean }): Finding[] {
   const clipped = all.filter((el) => {
     if (el.scrollWidth <= el.clientWidth + 1) return false;
     if (!visible(el)) return false;
+    const cs = getComputedStyle(el);
     // Only hidden/clip actually truncate; visible/auto/scroll show or scroll the text.
-    const ox = getComputedStyle(el).overflowX;
-    if (ox !== 'hidden' && ox !== 'clip') return false;
+    if (cs.overflowX !== 'hidden' && cs.overflowX !== 'clip') return false;
+    // An ellipsis affordance (e.g. the `.truncate` utility) is intentional, designed
+    // truncation — not a bug. Only hard clipping with no ellipsis is worth flagging.
+    if (cs.textOverflow.includes('ellipsis')) return false;
     return Array.from(el.childNodes).some(
       (n) => n.nodeType === 3 && (n.textContent || '').trim().length > 0,
     );

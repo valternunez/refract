@@ -5,6 +5,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- **`text_overflow` ignores intentional ellipsis truncation.** Elements with
+  `text-overflow: ellipsis` (the `.truncate` utility) are designed to truncate, so
+  they're no longer flagged — only hard clipping with no ellipsis is. Cuts the
+  false-positive noise seen on real dashboards; genuine clipping is still caught.
+
 ### Added
 - **CI recipe.** A copy-ready GitHub Actions workflow
   (`examples/github-actions/visual-diff.yml`) + README "Use in CI" section that run

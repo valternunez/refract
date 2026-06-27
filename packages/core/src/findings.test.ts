@@ -142,6 +142,32 @@ describe('collectFindings false positives', () => {
     }
   });
 
+  it('does not flag intentional ellipsis truncation', { timeout: 30000 }, async () => {
+    const { findings, context } = await findingsFor(
+      '<div style="width:120px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">' +
+        'a very long single line that gets truncated with an ellipsis on purpose' +
+        '</div>',
+    );
+    try {
+      expect(findings.find((f) => f.type === 'text_overflow')).toBeUndefined();
+    } finally {
+      await context.close();
+    }
+  });
+
+  it('still flags hard clipping with no ellipsis', { timeout: 30000 }, async () => {
+    const { findings, context } = await findingsFor(
+      '<div style="width:120px;overflow:hidden;white-space:nowrap;text-overflow:clip">' +
+        'a very long single line that is hard-clipped with no ellipsis affordance' +
+        '</div>',
+    );
+    try {
+      expect(findings.find((f) => f.type === 'text_overflow')).toBeDefined();
+    } finally {
+      await context.close();
+    }
+  });
+
   it('does not flag an offscreen left:-9999px element', { timeout: 30000 }, async () => {
     const { findings, context } = await findingsFor(
       '<div style="position:absolute;left:-9999px;width:200px;height:40px">skip link</div>',

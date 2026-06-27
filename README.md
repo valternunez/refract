@@ -139,7 +139,7 @@ screenshots — agents act on these instead of eyeballing pixels:
 |---|---|---|
 | `horizontal_overflow` | error | the page scrolls wider than the viewport |
 | `element_clipped` | warn | an element sticks out past the viewport edge |
-| `text_overflow` | warn | text is clipped/truncated (`scrollWidth > clientWidth`) |
+| `text_overflow` | warn | text is hard-clipped with no ellipsis (`scrollWidth > clientWidth`; intentional `text-overflow: ellipsis` truncation is ignored) |
 | `tap_target_small` | warn | an interactive element is under 44×44 (mobile viewports) |
 | `image_no_alt` | warn | an `<img>` is missing its `alt` attribute |
 
