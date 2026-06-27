@@ -34,6 +34,11 @@ refract https://example.com --viewports mobile,tablet,desktop --out ./shots
 Outputs `./shots/{preset}.png`, one per viewport, and prints findings under each.
 Flags: `--viewports`, `--out`, `--selector`, `--wait-for`, `--freeze`, `--dpr`, `--concurrency`.
 
+Viewports that render identically (e.g. `iphone-17-pro` and `iphone-16-pro` are both
+402×874 @3) are rendered **once** and bundled into a single result, with the extra
+device names listed as `aliases` — so "render every iPhone" doesn't shoot the same
+pixels three times.
+
 ## Library quickstart
 
 ```ts

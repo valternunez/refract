@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -48,4 +48,27 @@ describe('render', () => {
       expect(shot.savedPath).toMatch(/[/\\]400x800\.png$/);
     },
   );
+
+  it('bundles viewports that render identically', { timeout: 30000 }, async () => {
+    // iphone-17-pro and iphone-16-pro are both 402×874 @3; iphone-15 is 393×852.
+    const shots = await render({
+      url: demo,
+      viewports: ['iphone-17-pro', 'iphone-16-pro', 'iphone-15'],
+      out: outDir,
+    });
+
+    // Two unique renders, not three.
+    expect(shots).toHaveLength(2);
+    const bundled = shots.find((s) => s.preset === 'iphone-17-pro');
+    if (!bundled) throw new Error('expected the canonical iphone-17-pro shot');
+    expect(bundled.aliases).toEqual(['iphone-16-pro']);
+
+    const solo = shots.find((s) => s.preset === 'iphone-15');
+    if (!solo) throw new Error('expected the iphone-15 shot');
+    expect(solo.aliases).toBeUndefined();
+
+    // Only the two canonical files were written (no iphone-16-pro.png).
+    const files = (await readdir(outDir)).sort();
+    expect(files).toEqual(['iphone-15.png', 'iphone-17-pro.png']);
+  });
 });

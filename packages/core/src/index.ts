@@ -47,15 +47,25 @@ export interface Shot {
   savedPath: string;
   /** Structured responsive/accessibility findings for this viewport. */
   findings: Finding[];
+  /**
+   * Other requested device names that render identically to this one (same
+   * geometry + DPR + touch, differing only by user-agent) and were bundled into
+   * this single result. Omitted when nothing else matched.
+   */
+  aliases?: string[];
 }
 
 /**
- * Render `url` at each viewport and return one {@link Shot} per viewport, each
- * carrying structured responsive/accessibility {@link Finding}s for that viewport.
+ * Render `url` at each viewport and return one {@link Shot} per **unique render**,
+ * each carrying structured responsive/accessibility {@link Finding}s.
  *
- * Launches a single Chromium browser and creates one context per viewport,
- * rendered in parallel (capped at `concurrency`). Throws a teaching error for
- * unknown viewport tokens, unreachable URLs, and missing `waitFor` selectors.
+ * Viewports that render identically (same geometry + DPR + touch, differing only
+ * by user-agent — e.g. `iphone-17-pro` and `iphone-16-pro`) are bundled into one
+ * result: rendered once, with the extra device names on {@link Shot.aliases}.
+ *
+ * Launches a single Chromium browser and creates one context per unique render,
+ * in parallel (capped at `concurrency`). Throws a teaching error for unknown
+ * viewport tokens, unreachable URLs, and missing `waitFor` selectors.
  *
  * @example
  * const shots = await render({ url: 'http://localhost:3000' });
@@ -77,10 +87,22 @@ export async function render(options: RenderOptions): Promise<Shot[]> {
   const outDir = resolve(out);
   await mkdir(outDir, { recursive: true });
 
+  // Bundle viewports that produce an identical render (same geometry + DPR + touch
+  // + isMobile — they differ only by user-agent, which rarely affects layout). Each
+  // group renders once; the first requested member is canonical, the rest aliases.
+  const groups = new Map<string, { canonical: ResolvedViewport; aliases: string[] }>();
+  for (const vp of resolved) {
+    const key = `${vp.width}x${vp.height}@${dpr ?? vp.deviceScaleFactor}|${vp.hasTouch ? 't' : ''}${vp.isMobile ? 'm' : ''}`;
+    const group = groups.get(key);
+    if (!group) groups.set(key, { canonical: vp, aliases: [] });
+    else if (vp.name !== group.canonical.name && !group.aliases.includes(vp.name))
+      group.aliases.push(vp.name);
+  }
+
   const browser = await chromium.launch(); // ONE browser, N contexts
   try {
-    return await mapPool(resolved, Math.max(1, concurrency), (vp) =>
-      renderOne(browser, url, vp, { selector, freeze, waitFor, outDir, dpr }),
+    return await mapPool([...groups.values()], Math.max(1, concurrency), (g) =>
+      renderOne(browser, url, g.canonical, g.aliases, { selector, freeze, waitFor, outDir, dpr }),
     );
   } finally {
     await browser.close();
@@ -100,6 +122,7 @@ async function renderOne(
   browser: Browser,
   url: string,
   vp: ResolvedViewport,
+  aliases: string[],
   opts: RenderOneOpts,
 ): Promise<Shot> {
   const context = await browser.newContext({
@@ -122,7 +145,15 @@ async function renderOne(
 
     const findings = await collectFindings(page, vp.isMobile);
 
-    return { preset: vp.name, width: vp.width, height: vp.height, image, savedPath, findings };
+    return {
+      preset: vp.name,
+      width: vp.width,
+      height: vp.height,
+      image,
+      savedPath,
+      findings,
+      aliases: aliases.length ? aliases : undefined,
+    };
   } finally {
     await context.close();
   }

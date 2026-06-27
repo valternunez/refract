@@ -6,6 +6,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **Identical-render bundling.** Viewports that resolve to the same geometry + DPR
+  + touch (differing only by user-agent — e.g. `iphone-17-pro`/`iphone-16-pro`,
+  the four 412×915 Pixels) render **once** and come back as a single `Shot` with
+  the other device names on `aliases`. Saves render time, disk, and (via MCP) the
+  agent's context. The dedupe ignores user-agent (rarely affects layout).
 - **Structured findings.** Every render now returns per-viewport `findings` (stable
   JSON) alongside the screenshots: `horizontal_overflow`, `element_clipped`,
   `text_overflow`, `tap_target_small` (mobile only), and `image_no_alt`. Surfaced

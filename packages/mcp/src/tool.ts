@@ -71,23 +71,30 @@ export async function renderResponsive(args: RenderResponsiveArgs): Promise<Call
     };
   }
 
+  // Identical renders (same geometry, different device) are bundled by render().
+  const also = (s: (typeof shots)[number]) =>
+    s.aliases?.length ? ` [also: ${s.aliases.join(', ')}]` : '';
+
   const manifest = [
-    `Rendered ${args.url} at ${shots.length} viewport(s). Full-resolution PNGs saved to:`,
-    ...shots.map((s) => `- ${s.preset} (${s.width}×${s.height}) → ${s.savedPath}`),
+    `Rendered ${args.url} at ${shots.length} unique render(s). Full-resolution PNGs saved to:`,
+    ...shots.map((s) => `- ${s.preset} (${s.width}×${s.height}) → ${s.savedPath}${also(s)}`),
   ].join('\n');
 
   const content: CallToolResult['content'] = [{ type: 'text', text: manifest }];
   content.push({
     type: 'text',
     text: `Findings:\n${JSON.stringify(
-      shots.map((s) => ({ preset: s.preset, findings: s.findings })),
+      shots.map((s) => ({ preset: s.preset, aliases: s.aliases, findings: s.findings })),
       null,
       2,
     )}`,
   });
   for (const shot of shots) {
     const preview = await downscalePreview(shot.image);
-    content.push({ type: 'text', text: `${shot.preset} (${shot.width}×${shot.height}):` });
+    content.push({
+      type: 'text',
+      text: `${shot.preset} (${shot.width}×${shot.height})${also(shot)}:`,
+    });
     content.push({ type: 'image', data: preview.toString('base64'), mimeType: 'image/png' });
   }
   return { content };

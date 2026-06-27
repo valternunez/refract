@@ -55,6 +55,9 @@ cli
 
       for (const s of shots) {
         console.log(`${s.preset.padEnd(20)} ${s.width}x${s.height}  ${s.savedPath}`);
+        if (s.aliases?.length) {
+          console.log(`  also: ${s.aliases.join(', ')}`);
+        }
         if (s.findings.length === 0) {
           console.log('  no findings');
           continue;
