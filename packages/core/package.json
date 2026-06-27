@@ -6,6 +6,14 @@
   "author": "Valter Núñez",
   "license": "MIT",
   "publishConfig": { "access": "public" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/getrefractjs/refract.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/getrefractjs/refract#readme",
+  "bugs": "https://github.com/getrefractjs/refract/issues",
+  "engines": { "node": ">=20" },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
