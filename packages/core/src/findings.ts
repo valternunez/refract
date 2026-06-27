@@ -15,6 +15,12 @@ export interface Finding {
   selector?: string;
   /** Element size for tap targets, e.g. "28x24". */
   size?: string;
+  /**
+   * The culprit element's box in **document** coordinates (CSS px, rounded) — scroll-stable,
+   * so it survives a full-page screenshot. Useful to zoom to, or annotate, exactly what broke.
+   * Omitted for page-level findings (e.g. `viewport_meta_missing`) that have no single element.
+   */
+  rect?: { x: number; y: number; width: number; height: number };
 }
 
 /**
@@ -48,6 +54,19 @@ function runChecks({ isMobile }: { isMobile: boolean }): Finding[] {
       if (sameTag.length > 1) sel += `:nth-of-type(${sameTag.indexOf(el) + 1})`;
     }
     return sel;
+  };
+  // The culprit box in document coordinates (rounded), so it stays correct on a full-page
+  // screenshot regardless of scroll — agents can zoom to it or we can annotate it.
+  const sx = window.scrollX;
+  const sy = window.scrollY;
+  const rectOf = (el: Element): Finding['rect'] => {
+    const r = el.getBoundingClientRect();
+    return {
+      x: Math.round(r.left + sx),
+      y: Math.round(r.top + sy),
+      width: Math.round(r.width),
+      height: Math.round(r.height),
+    };
   };
   const visible = (el: Element): boolean => {
     const r = el.getBoundingClientRect();
@@ -93,12 +112,18 @@ function runChecks({ isMobile }: { isMobile: boolean }): Finding[] {
     return !inClipContainer(el);
   });
 
-  // 1. Page-level horizontal overflow — only with a genuine visible culprit.
+  // 1. Page-level horizontal overflow — only with a genuine visible culprit, and name
+  //    the worst offender (furthest past the edge) so an agent knows what to fix.
   if (de.scrollWidth > vw && offenders.length > 0) {
+    const culprit = offenders.reduce((a, b) =>
+      b.getBoundingClientRect().right > a.getBoundingClientRect().right ? b : a,
+    );
     findings.push({
       type: 'horizontal_overflow',
       severity: 'error',
       detail: `scrollWidth=${de.scrollWidth} viewport=${vw}`,
+      selector: cssPath(culprit),
+      rect: rectOf(culprit),
     });
   }
 
@@ -121,6 +146,7 @@ function runChecks({ isMobile }: { isMobile: boolean }): Finding[] {
         severity: 'warn' as const,
         detail: `right=${Math.round(r.right)} viewport=${vw}`,
         selector: cssPath(el),
+        rect: rectOf(el),
       };
     }),
   );
@@ -146,6 +172,7 @@ function runChecks({ isMobile }: { isMobile: boolean }): Finding[] {
       severity: 'warn' as const,
       detail: `scrollWidth=${el.scrollWidth} clientWidth=${el.clientWidth}`,
       selector: cssPath(el),
+      rect: rectOf(el),
     })),
   );
 
@@ -170,6 +197,7 @@ function runChecks({ isMobile }: { isMobile: boolean }): Finding[] {
           detail: 'below 44x44 minimum',
           selector: cssPath(el),
           size: `${Math.round(r.width)}x${Math.round(r.height)}`,
+          rect: rectOf(el),
         };
       }),
     );
@@ -189,6 +217,7 @@ function runChecks({ isMobile }: { isMobile: boolean }): Finding[] {
         severity: 'warn' as const,
         detail: src.startsWith('data:') ? 'inline data-URI image' : src.slice(0, 80),
         selector: cssPath(img),
+        rect: rectOf(img),
       };
     }),
   );

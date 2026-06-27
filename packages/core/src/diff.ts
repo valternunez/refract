@@ -4,11 +4,15 @@
  * reinvent visual regression). Used by the `refract diff` CLI command.
  */
 
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import pixelmatch from 'pixelmatch';
 import { PNG } from 'pngjs';
+import type { Finding } from './findings';
 import type { Shot } from './index';
+
+/** Filename for the findings snapshot stored alongside the baseline PNGs. */
+const FINDINGS_FILE = 'findings.json';
 
 /** Outcome of comparing one viewport against its baseline. */
 export type DiffStatus = 'unchanged' | 'changed' | 'size_changed' | 'no_baseline';
@@ -35,6 +39,40 @@ export interface DiffResult {
   baselineHeight?: number;
   /** Other device names this render covers (carried from {@link Shot.aliases}). */
   aliases?: string[];
+  /**
+   * How the findings changed vs the baseline snapshot: `fixed` were present in the baseline
+   * but gone now, `regressed` are new. Identity is `type`+`selector` (detail/size/rect are
+   * descriptive, not identity). Omitted when the baseline has no `findings.json` (older
+   * baseline — re-run `--update` to capture one).
+   */
+  findingsDelta?: { fixed: Finding[]; regressed: Finding[] };
+}
+
+/**
+ * Persist `shots` as a baseline in `baselineDir`: each `{preset}.png` plus a single
+ * `findings.json` (`{ [preset]: Finding[] }`) so a later {@link diffShots} can report which
+ * findings were fixed or regressed. Backs `refract diff --update` and MCP
+ * `diff_responsive({ update: true })`.
+ */
+export async function writeBaseline(shots: Shot[], baselineDir: string): Promise<void> {
+  await mkdir(baselineDir, { recursive: true });
+  const findings: Record<string, Finding[]> = {};
+  for (const s of shots) {
+    await writeFile(join(baselineDir, `${s.preset}.png`), s.image);
+    findings[s.preset] = s.findings;
+  }
+  await writeFile(join(baselineDir, FINDINGS_FILE), JSON.stringify(findings, null, 2));
+}
+
+/** Fixed/regressed split of `current` findings vs the `baseline` snapshot, by type+selector. */
+function findingsDelta(baseline: Finding[], current: Finding[]): DiffResult['findingsDelta'] {
+  const key = (f: Finding) => `${f.type}|${f.selector ?? ''}`;
+  const baseKeys = new Set(baseline.map(key));
+  const curKeys = new Set(current.map(key));
+  return {
+    fixed: baseline.filter((f) => !curKeys.has(key(f))),
+    regressed: current.filter((f) => !baseKeys.has(key(f))),
+  };
 }
 
 /**
@@ -54,9 +92,20 @@ export async function diffShots(
   opts: { baselineDir: string; outDir: string; threshold?: number },
 ): Promise<DiffResult[]> {
   const threshold = opts.threshold ?? 0.1;
+
+  // Baseline findings snapshot (one file for all presets). Absent on older baselines
+  // written before findings were captured — then the findings delta is simply omitted.
+  let baselineFindings: Record<string, Finding[]> | undefined;
+  try {
+    baselineFindings = JSON.parse(await readFile(join(opts.baselineDir, FINDINGS_FILE), 'utf8'));
+  } catch {
+    baselineFindings = undefined;
+  }
+
   return Promise.all(
     shots.map(async (shot): Promise<DiffResult> => {
       const baselinePath = join(opts.baselineDir, `${shot.preset}.png`);
+      const baseFindings = baselineFindings?.[shot.preset];
       const base = {
         preset: shot.preset,
         width: shot.width,
@@ -64,6 +113,7 @@ export async function diffShots(
         baselinePath,
         currentPath: shot.savedPath,
         aliases: shot.aliases,
+        ...(baseFindings ? { findingsDelta: findingsDelta(baseFindings, shot.findings) } : {}),
       };
 
       let baselineBuf: Buffer;
@@ -137,6 +187,21 @@ function href(fromDir: string, file: string): string {
   return relative(fromDir, file).split('\\').join('/');
 }
 
+/** Short label for a finding in delta output, e.g. "tap_target_small button.cta". */
+export function findingLabel(f: Finding): string {
+  return `${f.type}${f.selector ? ` ${f.selector}` : ''}`;
+}
+
+/** The fixed/regressed findings block under a report card (empty string when no change). */
+function deltaBlock(delta: DiffResult['findingsDelta']): string {
+  if (!delta || (!delta.fixed.length && !delta.regressed.length)) return '';
+  const line = (cls: string, word: string, items: Finding[]) =>
+    items.length
+      ? `<div class="${cls}"><b>${word}</b> ${esc(items.map(findingLabel).join(', '))}</div>`
+      : '';
+  return `<div class="delta">${line('reg', 'regressed', delta.regressed)}${line('fix', 'fixed', delta.fixed)}</div>`;
+}
+
 /** One image column in a result card, or an empty placeholder when absent. */
 function imgCol(label: string, outDir: string, file: string | undefined): string {
   const body = file
@@ -172,6 +237,7 @@ export async function writeDiffReport(results: DiffResult[], outDir: string): Pr
         ${imgCol('current', outDir, r.currentPath)}
         ${imgCol('diff', outDir, r.diffPath)}
       </div>
+      ${deltaBlock(r.findingsDelta)}
     </section>`;
     })
     .join('\n');
@@ -210,6 +276,12 @@ export async function writeDiffReport(results: DiffResult[], outDir: string): Pr
   figure img { max-width: 100%; height: auto; border-radius: 6px;
     background: #fff; }
   .missing { color: #475569; padding: 32px 0; }
+  .delta { padding: 10px 16px; border-top: 1px solid #1e293b; font-size: 12px;
+    font-family: Consolas, "DejaVu Sans Mono", monospace; display: grid; gap: 4px; }
+  .delta b { font-weight: 600; text-transform: uppercase; letter-spacing: .04em;
+    margin-right: 6px; }
+  .delta .reg { color: #f97316; }
+  .delta .fix { color: #22c55e; }
 </style>
 </head>
 <body>

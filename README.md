@@ -130,14 +130,19 @@ screenshots — agents act on these instead of eyeballing pixels:
 
 ```ts
 { preset: "mobile", findings: [
-  { type: "horizontal_overflow", severity: "error", detail: "scrollWidth=480 viewport=402" },
-  { type: "tap_target_small", severity: "warn", selector: "button#tiny-btn", size: "28x24" },
+  { type: "horizontal_overflow", severity: "error", detail: "scrollWidth=480 viewport=402",
+    selector: "div.card", rect: { x: 0, y: 120, width: 480, height: 90 } },
+  { type: "tap_target_small", severity: "warn", selector: "button#tiny-btn", size: "28x24",
+    rect: { x: 16, y: 540, width: 28, height: 24 } },
 ]}
 ```
 
+Most findings carry a `selector` and a `rect` (the culprit's box in document pixels, so you
+can zoom straight to what broke); `horizontal_overflow` names the element that causes it.
+
 | type | severity | fires when |
 |---|---|---|
-| `horizontal_overflow` | error | the page scrolls wider than the viewport |
+| `horizontal_overflow` | error | the page scrolls wider than the viewport (names the culprit element) |
 | `element_clipped` | warn | an element sticks out past the viewport edge |
 | `text_overflow` | warn | text is hard-clipped with no ellipsis (`scrollWidth > clientWidth`; intentional `text-overflow: ellipsis` truncation is ignored) |
 | `tap_target_small` | warn | an interactive element is under 44×44 (mobile viewports) |
@@ -177,7 +182,11 @@ refract diff https://example.com                   # exits 1 if anything changed
 
 Each viewport is compared with [`pixelmatch`](https://github.com/mapbox/pixelmatch).
 Output per preset is `unchanged`, `changed` (with the % of pixels and a
-`{preset}.diff.png` highlighting them), `size_changed`, or `no_baseline`. A
+`{preset}.diff.png` highlighting them), `size_changed`, or `no_baseline`. Alongside the
+pixel diff, each preset reports a **findings delta** — which findings were *fixed* (gone
+since the baseline) or *regressed* (new) — so you can confirm a fix landed without
+introducing a new responsive issue. (The `--update` snapshot stores the findings too, in
+`findings.json`; an older baseline without one just omits the delta.) A
 `report.html` lands next to the shots with a **baseline │ current │ diff** grid.
 The command **exits non-zero when anything changed**, so CI fails on a regression;
 re-run with `--update` to accept the new look as the baseline. Flags: `--baseline

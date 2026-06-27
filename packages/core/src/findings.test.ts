@@ -129,6 +129,25 @@ describe('collectFindings false positives', () => {
     }
   });
 
+  it('names the overflow culprit and carries an integer rect', { timeout: 30000 }, async () => {
+    const { findings, context } = await findingsFor(
+      '<div id="wide" style="width:5000px;height:40px;background:red">visible</div>',
+    );
+    try {
+      const overflow = findings.find((f) => f.type === 'horizontal_overflow');
+      if (!overflow) throw new Error('expected a horizontal_overflow finding');
+      // Page-level finding now points at the worst offender.
+      expect(overflow.selector).toContain('wide');
+      const rect = overflow.rect;
+      if (!rect) throw new Error('expected a rect on the overflow finding');
+      expect(Number.isInteger(rect.x)).toBe(true);
+      expect(Number.isInteger(rect.width)).toBe(true);
+      expect(rect.width).toBeGreaterThan(375); // the 5000px block
+    } finally {
+      await context.close();
+    }
+  });
+
   it('does not flag text in an overflow:auto container', { timeout: 30000 }, async () => {
     const { findings, context } = await findingsFor(
       '<div style="width:200px;overflow:auto;white-space:nowrap">' +

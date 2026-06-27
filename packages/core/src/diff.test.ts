@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { diffShots, render, writeDiffReport } from './index';
+import { diffShots, render, writeBaseline, writeDiffReport } from './index';
 
 /** Write a minimal full-page solid-color fixture and return its file:// URL. */
 async function fixture(dir: string, name: string, color: string): Promise<string> {
@@ -35,6 +35,15 @@ describe('diff', () => {
     const shots = await render({ url, viewports: ['300x300'], out: outDir, dpr });
     for (const s of shots) await copyFile(s.savedPath, join(baselineDir, `${s.preset}.png`));
   }
+
+  /** Write a page with arbitrary body markup (for findings fixtures) and return its file:// URL. */
+  async function htmlFixture(name: string, inner: string): Promise<string> {
+    const file = join(fixDir, `${name}.html`);
+    await writeFile(file, `<!doctype html><html><body style="margin:0">${inner}</body></html>`);
+    return pathToFileURL(file).href;
+  }
+  const WIDE = '<div style="width:5000px;height:40px;background:red"></div>'; // overflows 300px
+  const NARROW = '<div style="width:50px;height:40px;background:red"></div>';
 
   it('reports unchanged when the render matches the baseline', { timeout: 30000 }, async () => {
     const red = await fixture(fixDir, 'a', 'red');
@@ -102,4 +111,45 @@ describe('diff', () => {
       expect(r?.status).toBe('no_baseline');
     },
   );
+
+  it(
+    'reports fixed findings when a baseline regression is resolved',
+    { timeout: 30000 },
+    async () => {
+      const over = await htmlFixture('over', WIDE);
+      const ok = await htmlFixture('ok', NARROW);
+      await writeBaseline(
+        await render({ url: over, viewports: ['300x300'], out: outDir, dpr: 1 }),
+        baselineDir,
+      );
+      const shots = await render({ url: ok, viewports: ['300x300'], out: outDir, dpr: 1 });
+
+      const [r] = await diffShots(shots, { baselineDir, outDir });
+      expect(r?.findingsDelta?.fixed.some((f) => f.type === 'horizontal_overflow')).toBe(true);
+      expect(r?.findingsDelta?.regressed).toHaveLength(0);
+    },
+  );
+
+  it('reports regressed findings when a new issue appears', { timeout: 30000 }, async () => {
+    const over = await htmlFixture('over2', WIDE);
+    const ok = await htmlFixture('ok2', NARROW);
+    await writeBaseline(
+      await render({ url: ok, viewports: ['300x300'], out: outDir, dpr: 1 }),
+      baselineDir,
+    );
+    const shots = await render({ url: over, viewports: ['300x300'], out: outDir, dpr: 1 });
+
+    const [r] = await diffShots(shots, { baselineDir, outDir });
+    expect(r?.findingsDelta?.regressed.some((f) => f.type === 'horizontal_overflow')).toBe(true);
+    expect(r?.findingsDelta?.fixed).toHaveLength(0);
+  });
+
+  it('omits the findings delta when the baseline has no snapshot', { timeout: 30000 }, async () => {
+    const red = await fixture(fixDir, 'a', 'red');
+    await seedBaseline(red); // copies the PNG only — no findings.json
+    const shots = await render({ url: red, viewports: ['300x300'], out: outDir, dpr: 1 });
+
+    const [r] = await diffShots(shots, { baselineDir, outDir });
+    expect(r?.findingsDelta).toBeUndefined();
+  });
 });

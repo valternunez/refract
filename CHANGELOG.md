@@ -5,6 +5,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- **Findings diff.** `refract diff` / MCP `diff_responsive` now report a per-viewport
+  **findings delta** — which structured findings were *fixed* (gone since the baseline) or
+  *regressed* (new) — alongside the pixel diff, so an agent can confirm a fix landed without
+  introducing a new responsive issue. The baseline now stores a `findings.json` snapshot
+  (written by `--update` / `update: true`); an older baseline without one omits the delta.
+  Surfaced in the CLI output, the MCP summary, and the HTML report. New core export
+  `writeBaseline` (used by both surfaces) + `findingLabel`; `DiffResult.findingsDelta`.
+- **`rect` on findings + overflow culprit.** Every element-backed finding now carries a
+  `rect` (the culprit's box in document pixels, scroll-stable) so you can zoom straight to
+  what broke, and `horizontal_overflow` now names the offending element (`selector` + `rect`).
+
 ## [0.1.0] - 2026-06-27
 
 ### Added

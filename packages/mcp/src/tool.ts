@@ -1,6 +1,12 @@
-import { copyFile, mkdir, readFile } from 'node:fs/promises';
-import { dirname, join, resolve } from 'node:path';
-import { diffShots, render, writeDiffReport } from '@getrefractjs/core';
+import { readFile } from 'node:fs/promises';
+import { dirname, resolve } from 'node:path';
+import {
+  diffShots,
+  findingLabel,
+  render,
+  writeBaseline,
+  writeDiffReport,
+} from '@getrefractjs/core';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import sharp from 'sharp';
 import { z } from 'zod';
@@ -19,7 +25,7 @@ Example:
   → renders at mobile, tablet, and desktop; returns a downscaled preview image per
     viewport plus the absolute path to the full-resolution PNG saved on disk.
 
-It also returns structured findings per viewport — horizontal overflow, elements clipped past the viewport, clipped or truncated text, tap targets under 44×44 on mobile, and images missing alt — so you can act on issues without eyeballing pixels. A finding looks like { type: "horizontal_overflow", severity: "error", detail: "scrollWidth=420 viewport=375", selector: "div.card" }.
+It also returns structured findings per viewport — horizontal overflow (naming the element that causes it), elements clipped past the viewport, clipped or truncated text, tap targets under 44×44 on mobile, and images missing alt — so you can act on issues without eyeballing pixels. A finding looks like { type: "horizontal_overflow", severity: "error", detail: "scrollWidth=420 viewport=375", selector: "div.card", rect: { x: 0, y: 120, width: 420, height: 80 } }. The rect is the culprit's box in document pixels, so you can zoom straight to what broke.
 
 You can narrow viewports (render_responsive({ url, viewports: ["iphone-15", "1440x900"] }))
 and clip to one element (render_responsive({ url, selector: ".hero" })). If the page is
@@ -157,6 +163,11 @@ Example:
     with the % of pixels changed, a downscaled diff image for each changed viewport, and
     the path to a report.html (baseline | current | diff grid).
 
+Besides pixels, it reports a per-viewport findings delta — which structured findings were
+fixed (gone since the baseline) vs regressed (new) — so you can confirm a fix landed and
+didn't introduce a new responsive issue. The baseline snapshot (update:true) captures the
+findings too; an older baseline without one simply omits the delta.
+
 First run, no baseline yet: call once with update:true to save the current renders as the
 baseline (diff_responsive({ url, update: true })), then call again after your change to compare.
 
@@ -211,8 +222,7 @@ export async function diffResponsive(args: DiffResponsiveArgs): Promise<CallTool
   const outDir = shots[0] ? dirname(shots[0].savedPath) : resolve('./refract-shots');
 
   if (update) {
-    await mkdir(baselineDir, { recursive: true });
-    for (const s of shots) await copyFile(s.savedPath, join(baselineDir, `${s.preset}.png`));
+    await writeBaseline(shots, baselineDir);
     return {
       content: [
         {
@@ -227,14 +237,22 @@ export async function diffResponsive(args: DiffResponsiveArgs): Promise<CallTool
   const reportPath = await writeDiffReport(results, outDir);
   const changed = results.filter((r) => r.status !== 'unchanged');
 
+  const deltaText = (r: (typeof results)[number]): string => {
+    const d = r.findingsDelta;
+    if (!d || (!d.regressed.length && !d.fixed.length)) return '';
+    const parts: string[] = [];
+    if (d.regressed.length) parts.push(`regressed ${d.regressed.map(findingLabel).join(', ')}`);
+    if (d.fixed.length) parts.push(`fixed ${d.fixed.map(findingLabel).join(', ')}`);
+    return ` — findings: ${parts.join('; ')}`;
+  };
   const summary = results
     .map((r) => {
       if (r.status === 'changed')
-        return `- ${r.preset}: changed (${((r.diffRatio ?? 0) * 100).toFixed(2)}%)`;
+        return `- ${r.preset}: changed (${((r.diffRatio ?? 0) * 100).toFixed(2)}%)${deltaText(r)}`;
       if (r.status === 'size_changed')
-        return `- ${r.preset}: size_changed (${r.baselineWidth}×${r.baselineHeight} → ${r.width}×${r.height})`;
+        return `- ${r.preset}: size_changed (${r.baselineWidth}×${r.baselineHeight} → ${r.width}×${r.height})${deltaText(r)}`;
       if (r.status === 'no_baseline') return `- ${r.preset}: no_baseline`;
-      return `- ${r.preset}: unchanged`;
+      return `- ${r.preset}: unchanged${deltaText(r)}`;
     })
     .join('\n');
 

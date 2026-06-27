@@ -1,6 +1,12 @@
-import { copyFile, mkdir } from 'node:fs/promises';
-import { join, relative, resolve } from 'node:path';
-import { type RenderOptions, diffShots, render, writeDiffReport } from '@getrefractjs/core';
+import { relative, resolve } from 'node:path';
+import {
+  type RenderOptions,
+  diffShots,
+  findingLabel,
+  render,
+  writeBaseline,
+  writeDiffReport,
+} from '@getrefractjs/core';
 import { type Command, cac } from 'cac';
 
 // Thin wrapper over @getrefractjs/core. Keep this file lean.
@@ -137,10 +143,7 @@ addRenderFlags(cli.command('diff <url>', 'Compare a render against a baseline'))
       const outDir = resolve(flags.out);
 
       if (flags.update) {
-        await mkdir(baselineDir, { recursive: true });
-        for (const s of shots) {
-          await copyFile(s.savedPath, join(baselineDir, `${s.preset}.png`));
-        }
+        await writeBaseline(shots, baselineDir);
         console.log(`updated ${shots.length} baseline(s) in ${baselineDir}`);
         return;
       }
@@ -151,23 +154,36 @@ addRenderFlags(cli.command('diff <url>', 'Compare a render against a baseline'))
       for (const r of results) {
         if (r.status === 'unchanged') {
           console.log(`${r.preset.padEnd(20)} unchanged`);
-          continue;
-        }
-        regressions++;
-        if (r.status === 'changed') {
-          const pct = ((r.diffRatio ?? 0) * 100).toFixed(2);
-          const rel = relative(process.cwd(), r.diffPath ?? '')
-            .split('\\')
-            .join('/');
-          console.log(`${r.preset.padEnd(20)} changed    ${pct}% (${r.diffPixels} px)  → ${rel}`);
-        } else if (r.status === 'size_changed') {
-          console.log(
-            `${r.preset.padEnd(20)} size_changed  ${r.baselineWidth}x${r.baselineHeight} → ${r.width}x${r.height}`,
-          );
         } else {
-          console.log(
-            `${r.preset.padEnd(20)} no_baseline  run \`refract diff ${url} --update\` to create it`,
-          );
+          regressions++;
+          if (r.status === 'changed') {
+            const pct = ((r.diffRatio ?? 0) * 100).toFixed(2);
+            const rel = relative(process.cwd(), r.diffPath ?? '')
+              .split('\\')
+              .join('/');
+            console.log(`${r.preset.padEnd(20)} changed    ${pct}% (${r.diffPixels} px)  → ${rel}`);
+          } else if (r.status === 'size_changed') {
+            console.log(
+              `${r.preset.padEnd(20)} size_changed  ${r.baselineWidth}x${r.baselineHeight} → ${r.width}x${r.height}`,
+            );
+          } else {
+            console.log(
+              `${r.preset.padEnd(20)} no_baseline  run \`refract diff ${url} --update\` to create it`,
+            );
+          }
+        }
+        // Findings delta (when the baseline has a findings snapshot) — actionable
+        // regardless of the pixel verdict.
+        const d = r.findingsDelta;
+        if (d && (d.regressed.length || d.fixed.length)) {
+          const parts: string[] = [];
+          if (d.regressed.length)
+            parts.push(
+              `+${d.regressed.length} regressed (${d.regressed.map(findingLabel).join(', ')})`,
+            );
+          if (d.fixed.length)
+            parts.push(`-${d.fixed.length} fixed (${d.fixed.map(findingLabel).join(', ')})`);
+          console.log(`${' '.repeat(20)} findings: ${parts.join(' · ')}`);
         }
       }
 
