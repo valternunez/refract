@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/icon.svg" width="96" alt="Refract" />
+</p>
+
 # Refract
 
 Agent-first responsive screenshots. Give a coding agent (or yourself) one
