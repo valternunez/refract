@@ -8,11 +8,11 @@
   "publishConfig": { "access": "public" },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/getrefractjs/refract.git",
+    "url": "git+https://github.com/valternunez/refract.git",
     "directory": "packages/mcp"
   },
-  "homepage": "https://github.com/getrefractjs/refract#readme",
-  "bugs": "https://github.com/getrefractjs/refract/issues",
+  "homepage": "https://github.com/valternunez/refract#readme",
+  "bugs": "https://github.com/valternunez/refract/issues",
   "engines": { "node": ">=20" },
   "type": "module",
   "bin": {
