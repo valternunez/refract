@@ -1,0 +1,37 @@
+# Example: fail a PR when the UI changes visually, using `refract diff`.
+#
+# This file lives under examples/ so it never runs in THIS repo. To use it, copy it
+# into `.github/workflows/` in your own project and adjust the URL.
+#
+# Baselines live in `./refract-baseline/{preset}.png`. Generate them once locally and
+# commit them:
+#     npx refract diff "<your-preview-url>" --update --freeze
+# Refresh the same way (and commit) whenever an intended visual change lands — the
+# diff that fails CI is also how you accept the new look.
+
+name: Visual diff
+
+on: [pull_request]
+
+jobs:
+  visual-diff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4 # brings in the committed ./refract-baseline
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-save @getrefractjs/cli
+      - run: npx playwright install --with-deps chromium # render() drives headless Chromium
+
+      # Point at a deployed preview, or start your dev server and use localhost.
+      # `refract diff` exits non-zero on any visual change, which fails this step (and the job).
+      - name: Refract visual diff
+        run: npx refract diff "${{ vars.PREVIEW_URL }}" --baseline ./refract-baseline --out ./refract-shots --freeze
+
+      # Keep the report + diff PNGs so reviewers can see exactly what changed.
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: refract-diff-report
+          path: ./refract-shots # report.html + {preset}.png + {preset}.diff.png

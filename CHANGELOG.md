@@ -6,6 +6,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **CI recipe.** A copy-ready GitHub Actions workflow
+  (`examples/github-actions/visual-diff.yml`) + README "Use in CI" section that run
+  `refract diff` against a deployed preview on each PR, fail on a regression, and
+  upload the report + diff PNGs as an artifact.
 - **MCP `diff_responsive` tool.** Visual regression in-band for agents: renders,
   compares against a saved baseline, and returns a per-viewport status with the % of
   pixels changed, a downscaled diff image for each changed viewport, and a `report.html`

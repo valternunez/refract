@@ -184,6 +184,17 @@ re-run with `--update` to accept the new look as the baseline. Flags: `--baselin
 <dir>`, `--update`, `--threshold <0-1>`, plus all the render flags above (`--freeze`
 is recommended for deterministic diffs).
 
+### Use in CI
+
+Commit your baselines (`./refract-baseline/`) and run `refract diff` against a
+deployed preview on every PR — it exits non-zero on a regression, failing the job.
+A ready-to-copy GitHub Actions workflow is in
+[examples/github-actions/visual-diff.yml](examples/github-actions/visual-diff.yml):
+it installs the CLI + Chromium, runs the diff, and uploads `report.html` + the diff
+PNGs as an artifact when something changed. Refresh baselines by re-running with
+`--update` and committing. (Agents working in an MCP client can do the same loop via
+the `diff_responsive` tool.)
+
 ## What this is *not*
 
 - ❌ A browser extension or live-preview app (that's Responsively's job).
