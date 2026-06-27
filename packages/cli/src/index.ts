@@ -1,7 +1,7 @@
-import { render } from '@refract/core';
+import { render } from '@getrefractjs/core';
 import { cac } from 'cac';
 
-// Thin wrapper over @refract/core. Keep this file <100 lines.
+// Thin wrapper over @getrefractjs/core. Keep this file <100 lines.
 const cli = cac('refract');
 
 interface Flags {

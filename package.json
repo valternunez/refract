@@ -21,7 +21,7 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@changesets/cli": "^2.31.0",
-    "@refract/core": "workspace:*",
+    "@getrefractjs/core": "workspace:*",
     "@types/node": "^22.10.2",
     "gifenc": "^1.0.3",
     "sharp": "^0.33.5",

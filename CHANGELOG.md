@@ -11,7 +11,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `text_overflow`, `tap_target_small` (mobile only), and `image_no_alt`. Surfaced
   on `Shot.findings` (core), printed under each shot (CLI), and returned as JSON
   keyed by preset (MCP `render_responsive`).
-- `@refract/core`: `render()` — screenshots a URL at N viewports using a single
+- `@getrefractjs/core`: `render()` — screenshots a URL at N viewports using a single
   Chromium browser with one context per viewport, rendered in parallel
   (concurrency capped at `os.cpus().length`, overridable). Smart waits
   (networkidle best-effort, fonts ready, layout-shift settle, optional `waitFor`
@@ -19,13 +19,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   loading), element-scoped capture via `selector`, and a `dpr` override. Load
   failures become teaching errors (DNS / connection refused / timeout / HTTP
   ≥ 400). Full-res PNGs are saved to deterministic `{name}.png` paths.
-- `@refract/core`: 20 device presets (`presets.json`) — current flagships
+- `@getrefractjs/core`: 20 device presets (`presets.json`) — current flagships
   (iPhone 17 Pro Max, Galaxy S26 Ultra, Pixel 10 Pro, iPad Pro, MacBook Pro) plus
   common desktop sizes — with `resolveViewport()` accepting a preset key, the
   `mobile`/`tablet`/`desktop` groups, or a `WxH` token, and `listPresetNames()`.
-- `@refract/cli`: `refract <url>` renders screenshots to disk, with `--viewports`,
+- `@getrefractjs/cli`: `refract <url>` renders screenshots to disk, with `--viewports`,
   `--out`, `--selector`, `--freeze`, `--dpr`, and `--concurrency`.
-- `@refract/mcp`: `render_responsive` renders via the engine and returns, in one
+- `@getrefractjs/mcp`: `render_responsive` renders via the engine and returns, in one
   response, a text manifest of absolute saved paths plus a downscaled preview
   image (≤800px wide) per viewport; render failures surface as teaching errors.
   A repo-root `.mcp.json` registers the local server for use in Claude Code.

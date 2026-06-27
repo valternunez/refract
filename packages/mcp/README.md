@@ -1,10 +1,10 @@
-# @refract/mcp
+# @getrefractjs/mcp
 
 Refract's MCP server — one tool, `render_responsive`, so coding agents can do
 responsive QA without scripting a browser.
 
 ```json
-{ "mcpServers": { "refract": { "command": "npx", "args": ["-y", "@refract/mcp"] } } }
+{ "mcpServers": { "refract": { "command": "npx", "args": ["-y", "@getrefractjs/mcp"] } } }
 ```
 
 `render_responsive({ url })` renders the URL across viewports and returns, in one

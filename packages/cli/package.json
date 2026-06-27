@@ -1,5 +1,5 @@
 {
-  "name": "@refract/cli",
+  "name": "@getrefractjs/cli",
   "version": "0.0.0",
   "description": "Refract CLI — `refract <url>` renders responsive screenshots from the terminal.",
   "keywords": ["refract", "responsive", "screenshots", "playwright", "cli", "viewport", "visual-testing"],
@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@refract/core": "workspace:*",
+    "@getrefractjs/core": "workspace:*",
     "cac": "^6.7.14"
   }
 }

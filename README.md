@@ -15,8 +15,8 @@ library**.
 ## Install
 
 ```sh
-pnpm add @refract/core        # library
-pnpm add -g @refract/cli      # CLI
+pnpm add @getrefractjs/core        # library
+pnpm add -g @getrefractjs/cli      # CLI
 # one-time browser download (deferred until first render):
 pnpm exec playwright install chromium
 ```
@@ -32,7 +32,7 @@ Outputs `./shots/{preset}.png`, one per viewport.
 ## Library quickstart
 
 ```ts
-import { render } from '@refract/core';
+import { render } from '@getrefractjs/core';
 
 const shots = await render({ url: 'http://localhost:3000' });
 for (const shot of shots) {
@@ -50,7 +50,7 @@ for (const shot of shots) {
   "mcpServers": {
     "refract": {
       "command": "npx",
-      "args": ["-y", "@refract/mcp"]
+      "args": ["-y", "@getrefractjs/mcp"]
     }
   }
 }

@@ -1,5 +1,5 @@
 {
-  "name": "@refract/core",
+  "name": "@getrefractjs/core",
   "version": "0.0.0",
   "description": "Refract core — render() at N viewports on Playwright, returns screenshots and findings.",
   "keywords": ["refract", "responsive", "screenshots", "playwright", "viewport", "visual-testing", "findings"],

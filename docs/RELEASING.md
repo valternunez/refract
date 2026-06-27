@@ -1,9 +1,9 @@
 # Releasing
 
 Refract uses [Changesets](https://github.com/changesets/changesets). The three
-published packages (`@refract/core`, `@refract/cli`, `@refract/mcp`) are **locked
+published packages (`@getrefractjs/core`, `@getrefractjs/cli`, `@getrefractjs/mcp`) are **locked
 in step** (`fixed` in `.changeset/config.json`) — they always share one version
-and bump together. `@refract/demo-site` and the root are private and never published.
+and bump together. `@getrefractjs/demo-site` and the root are private and never published.
 
 ## Day to day
 

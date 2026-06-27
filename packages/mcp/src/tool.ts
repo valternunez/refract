@@ -1,5 +1,5 @@
+import { render } from '@getrefractjs/core';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
-import { render } from '@refract/core';
 import sharp from 'sharp';
 import { z } from 'zod';
 

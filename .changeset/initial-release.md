@@ -1,7 +1,7 @@
 ---
-"@refract/core": minor
-"@refract/cli": minor
-"@refract/mcp": minor
+"@getrefractjs/core": minor
+"@getrefractjs/cli": minor
+"@getrefractjs/mcp": minor
 ---
 
 Initial release.

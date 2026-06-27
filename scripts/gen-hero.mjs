@@ -5,7 +5,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { render } from '@refract/core';
+import { render } from '@getrefractjs/core';
 import sharp from 'sharp';
 
 const root = fileURLToPath(new URL('..', import.meta.url));

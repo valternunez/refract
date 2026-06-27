@@ -20,5 +20,5 @@ jobs:
       - run: pnpm lint
       - run: pnpm build
       # render() tests drive a real headless browser.
-      - run: pnpm --filter @refract/core exec playwright install --with-deps chromium
+      - run: pnpm --filter @getrefractjs/core exec playwright install --with-deps chromium
       - run: pnpm test

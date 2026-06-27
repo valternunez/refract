@@ -1,4 +1,4 @@
-# @refract/core
+# @getrefractjs/core
 
 Rendering engine behind **Refract** — agent-first responsive screenshots.
 
@@ -8,7 +8,7 @@ structured findings**: horizontal overflow, clipped elements, truncated text,
 sub-44px tap targets, and images missing `alt`.
 
 ```ts
-import { render } from '@refract/core';
+import { render } from '@getrefractjs/core';
 
 const shots = await render({ url: 'http://localhost:3000' });
 for (const shot of shots) {
