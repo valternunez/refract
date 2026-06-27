@@ -53,14 +53,62 @@
       "hasTouch": true,
       "isMobile": true
     },
-    "pixel-10-pro": {
-      "width": 448,
-      "height": 998,
+    "galaxy-s25-ultra": {
+      "width": 412,
+      "height": 891,
+      "deviceScaleFactor": 3.5,
+      "userAgent": "Mozilla/5.0 (Linux; Android 15; SM-S938B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36",
+      "hasTouch": true,
+      "isMobile": true
+    },
+    "galaxy-s25": {
+      "width": 360,
+      "height": 780,
+      "deviceScaleFactor": 3,
+      "userAgent": "Mozilla/5.0 (Linux; Android 15; SM-S931B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36",
+      "hasTouch": true,
+      "isMobile": true
+    },
+    "galaxy-s24-ultra": {
+      "width": 412,
+      "height": 891,
+      "deviceScaleFactor": 3.5,
+      "userAgent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36",
+      "hasTouch": true,
+      "isMobile": true
+    },
+    "galaxy-a55": {
+      "width": 412,
+      "height": 892,
       "deviceScaleFactor": 2.625,
-      "userAgent": "Mozilla/5.0 (Linux; Android 16; Pixel 10 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36",
+      "userAgent": "Mozilla/5.0 (Linux; Android 14; SM-A556B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36",
+      "hasTouch": true,
+      "isMobile": true
+    },
+    "galaxy-z-fold-6": {
+      "width": 619,
+      "height": 720,
+      "deviceScaleFactor": 3,
+      "userAgent": "Mozilla/5.0 (Linux; Android 14; SM-F956B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36",
       "hasTouch": true,
       "isMobile": true,
-      "_note": "CSS viewport approximate: Pixel 10 Pro shares the 6.3in 1280x2856 panel of the Pixel 9 Pro; exact logical viewport not authoritatively documented. Derived from physical width / DPR 2.625 (~448 CSS px). Verify against a real device when available."
+      "_note": "Unfolded inner screen (7.6in, 1856x2160 panel @3 DPR). Inner-screen CSS viewport varies by browser and app-continuity scaling; 619x720 derived from panel / DPR 3. Outer cover screen is a separate ~323x792 viewport not modeled here."
+    },
+    "galaxy-z-flip-6": {
+      "width": 393,
+      "height": 960,
+      "deviceScaleFactor": 2.75,
+      "userAgent": "Mozilla/5.0 (Linux; Android 14; SM-F741B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36",
+      "hasTouch": true,
+      "isMobile": true
+    },
+    "pixel-10-pro": {
+      "width": 410,
+      "height": 914,
+      "deviceScaleFactor": 3.125,
+      "userAgent": "Mozilla/5.0 (Linux; Android 16; Pixel 10 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36",
+      "hasTouch": true,
+      "isMobile": true
     },
     "pixel-8": {
       "width": 412,
@@ -84,8 +132,7 @@
       "deviceScaleFactor": 2,
       "userAgent": "Mozilla/5.0 (iPad; CPU OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1",
       "hasTouch": true,
-      "isMobile": true,
-      "_note": "Height approximate: iPad Pro 11in M4 reported as 834 CSS px wide @2 DPR; portrait height ~1210 derived from 2420 physical / 2. Width verified, exact logical height varies slightly by source."
+      "isMobile": true
     },
     "ipad-mini": {
       "width": 744,
@@ -94,6 +141,32 @@
       "userAgent": "Mozilla/5.0 (iPad; CPU OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1",
       "hasTouch": true,
       "isMobile": true
+    },
+    "galaxy-tab-s10-ultra": {
+      "width": 924,
+      "height": 1480,
+      "deviceScaleFactor": 2,
+      "userAgent": "Mozilla/5.0 (Linux; Android 14; SM-X926B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+      "hasTouch": true,
+      "isMobile": true,
+      "_note": "14.6in tablet, 2960x1848 panel. Portrait 924x1480 derived from panel / DPR 2 (kept portrait for catalog consistency; pass WxH to rotate). Some databases report a downscaled ~906x1451 due to Samsung tablet display scaling."
+    },
+    "galaxy-tab-s10-plus": {
+      "width": 876,
+      "height": 1400,
+      "deviceScaleFactor": 2,
+      "userAgent": "Mozilla/5.0 (Linux; Android 14; SM-X826B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+      "hasTouch": true,
+      "isMobile": true
+    },
+    "galaxy-tab-a9-plus": {
+      "width": 800,
+      "height": 1280,
+      "deviceScaleFactor": 1.5,
+      "userAgent": "Mozilla/5.0 (Linux; Android 14; SM-X216B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+      "hasTouch": true,
+      "isMobile": true,
+      "_note": "11in budget tablet, 1920x1200 panel (~206 PPI). Portrait 800x1280 derived from panel / DPR 1.5; exact CSS viewport not authoritatively documented across spec databases."
     },
     "macbook-pro-14": {
       "width": 1512,
