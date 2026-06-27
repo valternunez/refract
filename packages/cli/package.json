@@ -1,11 +1,21 @@
 {
   "name": "@getrefractjs/cli",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Refract CLI — `refract <url>` renders responsive screenshots from the terminal.",
-  "keywords": ["refract", "responsive", "screenshots", "playwright", "cli", "viewport", "visual-testing"],
+  "keywords": [
+    "refract",
+    "responsive",
+    "screenshots",
+    "playwright",
+    "cli",
+    "viewport",
+    "visual-testing"
+  ],
   "author": "Valter Núñez",
   "license": "MIT",
-  "publishConfig": { "access": "public" },
+  "publishConfig": {
+    "access": "public"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/valternunez/refract.git",
@@ -13,12 +23,16 @@
   },
   "homepage": "https://github.com/valternunez/refract#readme",
   "bugs": "https://github.com/valternunez/refract/issues",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
   "bin": {
     "refract": "./dist/index.js"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit"

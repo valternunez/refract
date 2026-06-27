@@ -1,11 +1,21 @@
 {
   "name": "@getrefractjs/mcp",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Refract MCP server — exposes render_responsive so coding agents can do responsive QA.",
-  "keywords": ["refract", "mcp", "model-context-protocol", "responsive", "screenshots", "playwright", "agent"],
+  "keywords": [
+    "refract",
+    "mcp",
+    "model-context-protocol",
+    "responsive",
+    "screenshots",
+    "playwright",
+    "agent"
+  ],
   "author": "Valter Núñez",
   "license": "MIT",
-  "publishConfig": { "access": "public" },
+  "publishConfig": {
+    "access": "public"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/valternunez/refract.git",
@@ -13,12 +23,16 @@
   },
   "homepage": "https://github.com/valternunez/refract#readme",
   "bugs": "https://github.com/valternunez/refract/issues",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
   "bin": {
     "refract-mcp": "./dist/index.js"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit"

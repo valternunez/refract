@@ -1,11 +1,21 @@
 {
   "name": "@getrefractjs/core",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Refract core — render() at N viewports on Playwright, returns screenshots and findings.",
-  "keywords": ["refract", "responsive", "screenshots", "playwright", "viewport", "visual-testing", "findings"],
+  "keywords": [
+    "refract",
+    "responsive",
+    "screenshots",
+    "playwright",
+    "viewport",
+    "visual-testing",
+    "findings"
+  ],
   "author": "Valter Núñez",
   "license": "MIT",
-  "publishConfig": { "access": "public" },
+  "publishConfig": {
+    "access": "public"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/valternunez/refract.git",
@@ -13,7 +23,9 @@
   },
   "homepage": "https://github.com/valternunez/refract#readme",
   "bugs": "https://github.com/valternunez/refract/issues",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -25,7 +37,9 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit"
