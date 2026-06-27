@@ -5,6 +5,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-06-27
+
 ### Added
 - **WebKit engine (`--engine`).** Render with the real Safari/WebKit engine (≈ iOS
   Safari) via `engine: "webkit"` (core), `--engine webkit` (CLI, incl. `refract diff`),
@@ -86,8 +88,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Publish-readiness: packages renamed to the `@getrefractjs` scope (npm org owned),
   with `keywords`, `author`, `repository`/`homepage`/`bugs`, `engines`, and
   `publishConfig.access: public`, plus per-package READMEs; `pnpm -r publish
-  --dry-run` produces clean tarballs (`dist` + README + LICENSE). Changesets wired
-  up. Not yet published — bumping off `0.0.0` comes at release time.
+  --dry-run` produces clean tarballs (`dist` + README + LICENSE). Published to npm
+  as `0.1.0` via GitHub Actions (OIDC trusted publishing, with provenance).
 - Security policy (`SECURITY.md`) and contributor docs (`CONTRIBUTING.md`,
   `CODE_OF_CONDUCT.md`); the README documents that Refract loads any URL, including
   `file://` and internal hosts.

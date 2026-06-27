@@ -15,7 +15,7 @@
     "lint": "biome check .",
     "format": "biome format --write .",
     "changeset": "changeset",
-    "version-packages": "changeset version",
+    "version-packages": "changeset version && node scripts/roll-root-changelog.mjs",
     "release": "changeset publish",
     "bench": "pnpm build && node benchmarks/tokens.mjs"
   },
