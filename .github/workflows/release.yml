@@ -1,11 +1,12 @@
 name: Release
 
-# Dormant until the repo has a GitHub remote. On push to main, Changesets either
-# opens a "Version Packages" PR (when changesets are pending) or, once that PR is
-# merged and versions are bumped, publishes to npm. Requires an NPM_TOKEN secret.
+# Manual-only until the first publish. To arm it: (1) add an NPM_TOKEN repo secret
+# (npm Automation token), (2) enable Settings → Actions → General → "Allow GitHub
+# Actions to create and approve pull requests", then (3) swap the trigger below for
+# `push: { branches: [main] }`. Changesets then opens a "Version Packages" PR on
+# push to main; merging it publishes to npm.
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
