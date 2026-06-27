@@ -2,7 +2,10 @@
   "name": "@refract/cli",
   "version": "0.0.0",
   "description": "Refract CLI — `refract <url>` renders responsive screenshots from the terminal.",
+  "keywords": ["refract", "responsive", "screenshots", "playwright", "cli", "viewport", "visual-testing"],
+  "author": "Valter Núñez",
   "license": "MIT",
+  "publishConfig": { "access": "public" },
   "type": "module",
   "bin": {
     "refract": "./dist/index.js"

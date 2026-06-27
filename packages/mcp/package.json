@@ -2,7 +2,10 @@
   "name": "@refract/mcp",
   "version": "0.0.0",
   "description": "Refract MCP server — exposes render_responsive so coding agents can do responsive QA.",
+  "keywords": ["refract", "mcp", "model-context-protocol", "responsive", "screenshots", "playwright", "agent"],
+  "author": "Valter Núñez",
   "license": "MIT",
+  "publishConfig": { "access": "public" },
   "type": "module",
   "bin": {
     "refract-mcp": "./dist/index.js"
