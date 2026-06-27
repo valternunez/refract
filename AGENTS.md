@@ -14,12 +14,16 @@ Each is 5–15 lines: when to use it, the calls in order, what to look for.
 3. Confirm the `horizontal_overflow` / `element_clipped` finding for that viewport
    is gone from the response. If it's still present, the fix didn't take.
 
-## Playbook: screenshot-diff before merge
+## Playbook: visual-diff before merge
 
-**When:** you want before/after proof a change is visually safe.
-1. On the base branch: `render_responsive({ url, freeze: true })` — note the saved paths.
-2. Apply the change, re-render with the same args (filenames are deterministic `{preset}.png`).
-3. Diff the two `{preset}.png` sets. `freeze: true` removes animation flakiness.
+**When:** you want before/after proof a change didn't break the layout anywhere.
+1. On the base branch (CLI): `refract diff <url> --update --freeze` — snapshots the
+   baseline into `./refract-baseline/{preset}.png`.
+2. Apply the change, then: `refract diff <url> --freeze`.
+3. Read the output. `unchanged` everywhere → safe to merge. Any `changed` line gives
+   the % of pixels and a `{preset}.diff.png`; open `report.html` for the
+   baseline │ current │ diff grid. The command exits non-zero on any change, so it
+   drops straight into CI. Re-run with `--update` to accept the new look.
 
 ## Playbook: screenshot a page behind a login
 

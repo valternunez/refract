@@ -6,6 +6,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **Visual diff (`refract diff`).** Baseline visual-regression: render a URL and
+  compare each viewport against a saved baseline PNG with `pixelmatch`. Plain-folder
+  baselines (`./refract-baseline/{preset}.png`); `--update` (re)writes them. Per
+  viewport reports `unchanged` / `changed` (with % and a `{preset}.diff.png`) /
+  `size_changed` / `no_baseline`, writes a brand-styled `report.html`
+  (baseline │ current │ diff grid), and **exits non-zero on any change** for CI.
+  New core exports `diffShots` + `writeDiffReport`; adds `pixelmatch` + `pngjs`.
 - **Wait helpers (`waitForFunction`, `networkIdleMs`).** Gate capture on an
   app-specific readiness predicate — a JS expression polled in the page until
   truthy (`waitForFunction` core, `--wait-for-function` CLI, `waitForFunction` MCP),

@@ -14,6 +14,8 @@ import { type ResolvedViewport, resolveViewport } from './presets';
 
 export type { Finding } from './findings';
 export { collectFindings } from './findings';
+export type { DiffResult, DiffStatus } from './diff';
+export { diffShots, writeDiffReport } from './diff';
 
 /** A target viewport: either a preset name (`"iphone-15"`, `"mobile"`) or `WxH` (`"375x667"`). */
 export type Viewport = string;

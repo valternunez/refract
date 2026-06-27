@@ -133,6 +133,29 @@ screenshots — agents act on these instead of eyeballing pixels:
 
 The CLI prints them under each shot; the MCP tool returns them as JSON keyed by preset.
 
+## Visual diff
+
+`refract diff` catches *unintended* visual change across viewports — the "did my
+CSS tweak break another page" check. Baselines are just PNGs in a folder, so it's
+git-agnostic and trivial to wire into CI.
+
+```sh
+# 1. Save a baseline (once, or to accept new changes)
+refract diff https://example.com --update          # writes ./refract-baseline/{preset}.png
+
+# 2. Later, compare a fresh render against it
+refract diff https://example.com                   # exits 1 if anything changed
+```
+
+Each viewport is compared with [`pixelmatch`](https://github.com/mapbox/pixelmatch).
+Output per preset is `unchanged`, `changed` (with the % of pixels and a
+`{preset}.diff.png` highlighting them), `size_changed`, or `no_baseline`. A
+`report.html` lands next to the shots with a **baseline │ current │ diff** grid.
+The command **exits non-zero when anything changed**, so CI fails on a regression;
+re-run with `--update` to accept the new look as the baseline. Flags: `--baseline
+<dir>`, `--update`, `--threshold <0-1>`, plus all the render flags above (`--freeze`
+is recommended for deterministic diffs).
+
 ## What this is *not*
 
 - ❌ A browser extension or live-preview app (that's Responsively's job).
