@@ -1,0 +1,25 @@
+{
+  "name": "refract-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Agent-first responsive screenshots — MCP server + CLI + Node library on Playwright.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "build": "pnpm -r --filter \"./packages/*\" build",
+    "test": "vitest run",
+    "lint": "biome check .",
+    "format": "biome format --write ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^22.10.2",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

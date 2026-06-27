@@ -1,0 +1,18 @@
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Refract output
+refract-shots/
+shots/
+
+# Playwright
+.cache/
+test-results/
+playwright-report/
+
+# Editor / OS
+.DS_Store
+*.log
+.env
+.env.*
