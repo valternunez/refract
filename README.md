@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/icon.svg" width="96" alt="Refract" />
+  <img src="docs/icon.svg" width="128" alt="Refract" />
 </p>
 
 # Refract
