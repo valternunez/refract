@@ -1,11 +1,13 @@
 name: Release
 
-# Manual-only until the first publish. To arm it: (1) add an NPM_TOKEN repo secret
-# (npm Automation token), (2) enable Settings → Actions → General → "Allow GitHub
-# Actions to create and approve pull requests", then (3) swap the trigger below for
-# `push: { branches: [main] }`. Changesets then opens a "Version Packages" PR on
-# push to main; merging it publishes to npm.
+# Armed: on push to main, Changesets opens a "Version Packages" PR that consumes the
+# pending changesets (bumps versions + rewrites CHANGELOG). Merging that PR runs
+# `changeset publish` to npm (with provenance). Requires the NPM_TOKEN repo secret and
+# Settings → Actions → General → "Allow GitHub Actions to create and approve pull requests".
+# workflow_dispatch is kept so the release job can also be triggered manually.
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
