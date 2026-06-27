@@ -16,3 +16,8 @@ playwright-report/
 *.log
 .env
 .env.*
+
+# Local build harness — not part of the published project or the public repo.
+# The internal spec and the role-specialized agent team that builds Refract.
+.claude/
+/CLAUDE.md
