@@ -6,10 +6,21 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- Monorepo scaffold: `@refract/core`, `@refract/cli`, `@refract/mcp` as compiling
-  stubs sharing a strict TypeScript config, tsup builds, Biome, and Vitest.
-- Five role-specialized agent definitions under `.claude/agents/` (kiss-reviewer,
-  senior-engineer, agent-qa, device-specialist, docs-writer).
-- `render_responsive` MCP tool registered with its full agent-facing description
-  (handler is a not-implemented stub pending v0.1).
-- CI workflow: lint, build, and test on push/PR to `main`.
+- `@refract/core`: `render()` — screenshots a URL at N viewports using a single
+  Chromium browser with one context per viewport, rendered in parallel
+  (concurrency capped at `os.cpus().length`, overridable). Smart waits
+  (networkidle best-effort, fonts ready, layout-shift settle, optional `waitFor`
+  selector), `freeze` mode (disables animations/transitions, forces eager image
+  loading), element-scoped capture via `selector`, and a `dpr` override. Load
+  failures become teaching errors (DNS / connection refused / timeout / HTTP
+  ≥ 400). Full-res PNGs are saved to deterministic `{name}.png` paths.
+- `@refract/core`: 20 device presets (`presets.json`) — current flagships
+  (iPhone 17 Pro Max, Galaxy S26 Ultra, Pixel 10 Pro, iPad Pro, MacBook Pro) plus
+  common desktop sizes — with `resolveViewport()` accepting a preset key, the
+  `mobile`/`tablet`/`desktop` groups, or a `WxH` token, and `listPresetNames()`.
+- `@refract/cli`: `refract <url>` renders screenshots to disk, with `--viewports`,
+  `--out`, `--selector`, `--freeze`, `--dpr`, and `--concurrency`.
+- `@refract/mcp`: `render_responsive` tool registered with its full agent-facing
+  description (handler is still a stub — wired to the engine in a later part).
+- Monorepo scaffold: strict TypeScript, tsup builds, Biome, Vitest, and CI
+  (lint/build/test on push/PR to `main`).
