@@ -37,6 +37,38 @@
       "hasTouch": true,
       "isMobile": true
     },
+    "iphone-16-pro-max": {
+      "width": 440,
+      "height": 956,
+      "deviceScaleFactor": 3,
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
+      "hasTouch": true,
+      "isMobile": true
+    },
+    "iphone-16-pro": {
+      "width": 402,
+      "height": 874,
+      "deviceScaleFactor": 3,
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
+      "hasTouch": true,
+      "isMobile": true
+    },
+    "iphone-16-plus": {
+      "width": 430,
+      "height": 932,
+      "deviceScaleFactor": 3,
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
+      "hasTouch": true,
+      "isMobile": true
+    },
+    "iphone-16": {
+      "width": 393,
+      "height": 852,
+      "deviceScaleFactor": 3,
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
+      "hasTouch": true,
+      "isMobile": true
+    },
     "iphone-se": {
       "width": 375,
       "height": 667,
@@ -102,6 +134,15 @@
       "hasTouch": true,
       "isMobile": true
     },
+    "pixel-10-pro-xl": {
+      "width": 448,
+      "height": 997,
+      "deviceScaleFactor": 3,
+      "userAgent": "Mozilla/5.0 (Linux; Android 16; Pixel 10 Pro XL) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36",
+      "hasTouch": true,
+      "isMobile": true,
+      "_note": "6.8in, 1344x2992 panel. Viewport 448x997 @3 mapped from the same-resolution Pixel 9 Pro XL (Google reuses the panel); no standalone Pixel 10 Pro XL entry was found in spec databases as of 2026-06."
+    },
     "pixel-10-pro": {
       "width": 410,
       "height": 914,
@@ -109,6 +150,41 @@
       "userAgent": "Mozilla/5.0 (Linux; Android 16; Pixel 10 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36",
       "hasTouch": true,
       "isMobile": true
+    },
+    "pixel-10": {
+      "width": 412,
+      "height": 915,
+      "deviceScaleFactor": 2.625,
+      "userAgent": "Mozilla/5.0 (Linux; Android 16; Pixel 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36",
+      "hasTouch": true,
+      "isMobile": true,
+      "_note": "6.3in, 1080x2424 panel (shared with Pixel 9 / 9a). Viewport 412x915 @2.625 per viewpo.io / viewport-tester.com; some databases (yesviz) instead report 360x808 @3 for this panel depending on the default density Chrome reports."
+    },
+    "pixel-9-pro": {
+      "width": 427,
+      "height": 952,
+      "deviceScaleFactor": 3,
+      "userAgent": "Mozilla/5.0 (Linux; Android 16; Pixel 9 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36",
+      "hasTouch": true,
+      "isMobile": true
+    },
+    "pixel-9": {
+      "width": 412,
+      "height": 915,
+      "deviceScaleFactor": 2.625,
+      "userAgent": "Mozilla/5.0 (Linux; Android 16; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36",
+      "hasTouch": true,
+      "isMobile": true,
+      "_note": "6.3in, 1080x2424 panel. Viewport 412x915 @2.625 per viewpo.io / viewport-tester.com; yesviz instead reports 360x808 @3 for this panel."
+    },
+    "pixel-9a": {
+      "width": 412,
+      "height": 915,
+      "deviceScaleFactor": 2.625,
+      "userAgent": "Mozilla/5.0 (Linux; Android 16; Pixel 9a) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36",
+      "hasTouch": true,
+      "isMobile": true,
+      "_note": "6.3in, 1080x2424 panel (same as Pixel 9). Viewport 412x915 @2.625 mapped from the Pixel 9; no standalone Pixel 9a entry was found in spec databases as of 2026-06."
     },
     "pixel-8": {
       "width": 412,
@@ -133,6 +209,33 @@
       "userAgent": "Mozilla/5.0 (iPad; CPU OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1",
       "hasTouch": true,
       "isMobile": true
+    },
+    "ipad-air-13": {
+      "width": 1024,
+      "height": 1366,
+      "deviceScaleFactor": 2,
+      "userAgent": "Mozilla/5.0 (iPad; CPU OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1",
+      "hasTouch": true,
+      "isMobile": true,
+      "_note": "iPad Air 13in (M3, 2025), 2732x2048 panel. Viewport 1024x1366 @2 (same chassis/panel as the M2 13in Air)."
+    },
+    "ipad-air-11": {
+      "width": 820,
+      "height": 1180,
+      "deviceScaleFactor": 2,
+      "userAgent": "Mozilla/5.0 (iPad; CPU OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1",
+      "hasTouch": true,
+      "isMobile": true,
+      "_note": "iPad Air 11in (M3, 2025), 2360x1640 panel. Viewport 820x1180 @2 (same chassis/panel as the M2 11in Air)."
+    },
+    "ipad": {
+      "width": 820,
+      "height": 1180,
+      "deviceScaleFactor": 2,
+      "userAgent": "Mozilla/5.0 (iPad; CPU OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1",
+      "hasTouch": true,
+      "isMobile": true,
+      "_note": "Standard iPad 11th gen (A16, 2025), 2360x1640 panel. Viewport 820x1180 @2."
     },
     "ipad-mini": {
       "width": 744,
@@ -191,6 +294,24 @@
       "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
       "hasTouch": false,
       "isMobile": false
+    },
+    "chromebook": {
+      "width": 1366,
+      "height": 768,
+      "deviceScaleFactor": 1,
+      "userAgent": "Mozilla/5.0 (X11; CrOS x86_64 14541.0.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+      "hasTouch": false,
+      "isMobile": false,
+      "_note": "Ubiquitous budget Chromebook, 1366x768 panel at DPR 1."
+    },
+    "chromebook-hidpi": {
+      "width": 1200,
+      "height": 800,
+      "deviceScaleFactor": 2,
+      "userAgent": "Mozilla/5.0 (X11; CrOS x86_64 14541.0.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+      "hasTouch": false,
+      "isMobile": false,
+      "_note": "HiDPI Chromebook (Pixelbook-class), 2400x1600 panel. Viewport 1200x800 @2."
     },
     "desktop-1440": {
       "width": 1440,

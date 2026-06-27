@@ -19,11 +19,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   loading), element-scoped capture via `selector`, and a `dpr` override. Load
   failures become teaching errors (DNS / connection refused / timeout / HTTP
   ≥ 400). Full-res PNGs are saved to deterministic `{name}.png` paths.
-- `@getrefractjs/core`: 29 device presets (`presets.json`) — current flagships
-  (iPhone 17 family, Galaxy S26/S25/S24 + A55 + Z Fold/Flip, Pixel 10 Pro, iPad
-  Pro, Galaxy Tab S10, MacBook Pro) plus common desktop sizes — with
-  `resolveViewport()` accepting a preset key, the `mobile`/`tablet`/`desktop`
-  groups, or a `WxH` token, and `listPresetNames()`.
+- `@getrefractjs/core`: 43 device presets (`presets.json`) — iPhone 17 & 16
+  families + SE, Galaxy S26/S25/S24 + A55 + Z Fold/Flip, Pixel 10/9 families + 9a
+  + 8, iPad Pro/Air/base + mini, Galaxy Tab S10 + A9, MacBook Pro/Air,
+  Chromebooks, and common desktop sizes — with `resolveViewport()` accepting a
+  preset key, the `mobile`/`tablet`/`desktop` groups, or a `WxH` token, and
+  `listPresetNames()`.
 - `@getrefractjs/cli`: `refract <url>` renders screenshots to disk, with `--viewports`,
   `--out`, `--selector`, `--freeze`, `--dpr`, and `--concurrency`.
 - `@getrefractjs/mcp`: `render_responsive` renders via the engine and returns, in one
