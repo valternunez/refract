@@ -3,13 +3,13 @@
 Short recipes for when to reach for Refract and what to do with the output.
 Each is 5–15 lines: when to use it, the calls in order, what to look for.
 
-> 🚧 Scaffold stage. These playbooks describe the v0.1 surface; the render
-> handler is not implemented yet. They double as the spec for what "done" means.
+> `render_responsive` is live and returns previews + saved paths. Steps marked
+> "once findings ship" describe the v0.2 structured-findings layer, not yet built.
 
 ## Playbook: verify a responsive bug fix
 
 **When:** you changed CSS to fix a layout bug at a specific width.
-1. `render_responsive({ url: "http://localhost:3000/page", viewports: ["iphone-15", "ipad-mini", "macbook-13"] })`
+1. `render_responsive({ url: "http://localhost:3000/page", viewports: ["iphone-15", "ipad-mini", "macbook-air-13"] })`
 2. Look at the returned preview for the viewport you fixed.
 3. Once findings ship: confirm the `horizontal_overflow` / `clipped` finding for
    that viewport is gone. If it's still present, the fix didn't take.

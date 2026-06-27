@@ -52,7 +52,14 @@ for (const shot of shots) {
 ```
 
 The server exposes one tool, `render_responsive`, whose description tells an agent
-exactly when and how to call it — no docs required.
+exactly when and how to call it — no docs required. One call returns a text
+manifest of absolute saved paths plus a downscaled preview image per viewport
+(≤800px wide, so it won't blow the agent's context window); full-resolution PNGs
+are written to disk. Load failures come back as teaching errors the agent can act on.
+
+Working in this repo? A committed `.mcp.json` registers the local server
+(`node packages/mcp/dist/index.js`) — run `pnpm build` first and restart your
+client so it picks the tool up.
 
 ## What this is *not*
 

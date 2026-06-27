@@ -20,7 +20,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `mobile`/`tablet`/`desktop` groups, or a `WxH` token, and `listPresetNames()`.
 - `@refract/cli`: `refract <url>` renders screenshots to disk, with `--viewports`,
   `--out`, `--selector`, `--freeze`, `--dpr`, and `--concurrency`.
-- `@refract/mcp`: `render_responsive` tool registered with its full agent-facing
-  description (handler is still a stub — wired to the engine in a later part).
+- `@refract/mcp`: `render_responsive` renders via the engine and returns, in one
+  response, a text manifest of absolute saved paths plus a downscaled preview
+  image (≤800px wide) per viewport; render failures surface as teaching errors.
+  A repo-root `.mcp.json` registers the local server for use in Claude Code.
 - Monorepo scaffold: strict TypeScript, tsup builds, Biome, Vitest, and CI
   (lint/build/test on push/PR to `main`).
