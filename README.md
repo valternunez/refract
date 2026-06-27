@@ -27,7 +27,8 @@ pnpm exec playwright install chromium
 refract https://example.com --viewports mobile,tablet,desktop --out ./shots
 ```
 
-Outputs `./shots/{preset}.png`, one per viewport.
+Outputs `./shots/{preset}.png`, one per viewport, and prints findings under each.
+Flags: `--viewports`, `--out`, `--selector`, `--wait-for`, `--freeze`, `--dpr`, `--concurrency`.
 
 ## Library quickstart
 
@@ -97,6 +98,14 @@ The CLI prints them under each shot; the MCP tool returns them as JSON keyed by 
 - ❌ A visual-regression engine reinvented from scratch (it wraps `pixelmatch`).
 - ❌ A real-device cloud. Playwright **emulates** viewport, DPR, UA, and touch —
   not the GPU or iOS's actual WebKit. It does not replace BrowserStack.
+
+## Security
+
+Refract loads **any URL you give it** — including `file://` (local files) and
+internal/private hosts (e.g. cloud metadata endpoints) — and returns the rendered
+pixels. Treat it like `curl`: don't point it, or an agent driving the MCP server,
+at untrusted or sensitive URLs. There is no URL allow/deny list by default. See
+[SECURITY.md](SECURITY.md) to report a vulnerability.
 
 ## License
 

@@ -32,10 +32,10 @@ push to `main` opens a "Version Packages" PR; merging it publishes. It needs an
 
 ## Before the first publish (not done yet)
 
-- **Own the `@refract` npm scope** (or switch the packages to unscoped names /
-  your own scope). `access` is already set to `public`.
+- The `@getrefractjs` npm scope is **owned** (org: getrefractjs); `access` is `public`.
+  Publishing needs `npm login` + 2FA, or an Automation `NPM_TOKEN` in CI.
 - The initial changeset bumps `0.0.0 → 0.1.0`. Run `pnpm changeset status` to preview.
-- Add a GitHub remote, then `repository`/`homepage` fields to each package.json.
+- Confirm the `repository`/`homepage` URLs in each package.json match the real GitHub repo.
 
 > Note: Changesets generates a `CHANGELOG.md` per package. The root `CHANGELOG.md`
 > is the human-curated, repo-level summary — keep it for the big picture.
