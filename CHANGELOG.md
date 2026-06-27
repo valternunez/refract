@@ -6,6 +6,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **Structured findings.** Every render now returns per-viewport `findings` (stable
+  JSON) alongside the screenshots: `horizontal_overflow`, `element_clipped`,
+  `text_overflow`, `tap_target_small` (mobile only), and `image_no_alt`. Surfaced
+  on `Shot.findings` (core), printed under each shot (CLI), and returned as JSON
+  keyed by preset (MCP `render_responsive`).
 - `@refract/core`: `render()` — screenshots a URL at N viewports using a single
   Chromium browser with one context per viewport, rendered in parallel
   (concurrency capped at `os.cpus().length`, overridable). Smart waits

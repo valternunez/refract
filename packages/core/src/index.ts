@@ -9,7 +9,11 @@ import { mkdir } from 'node:fs/promises';
 import { cpus } from 'node:os';
 import { join, resolve } from 'node:path';
 import { type Browser, type Page, type Response, chromium } from 'playwright';
+import { type Finding, collectFindings } from './findings';
 import { type ResolvedViewport, resolveViewport } from './presets';
+
+export type { Finding } from './findings';
+export { collectFindings } from './findings';
 
 /** A target viewport: either a preset name (`"iphone-15"`, `"mobile"`) or `WxH` (`"375x667"`). */
 export type Viewport = string;
@@ -41,10 +45,13 @@ export interface Shot {
   height: number;
   image: Buffer;
   savedPath: string;
+  /** Structured responsive/accessibility findings for this viewport. */
+  findings: Finding[];
 }
 
 /**
- * Render `url` at each viewport and return one {@link Shot} per viewport.
+ * Render `url` at each viewport and return one {@link Shot} per viewport, each
+ * carrying structured responsive/accessibility {@link Finding}s for that viewport.
  *
  * Launches a single Chromium browser and creates one context per viewport,
  * rendered in parallel (capped at `concurrency`). Throws a teaching error for
@@ -113,7 +120,9 @@ async function renderOne(
       ? await page.locator(opts.selector).screenshot({ path: savedPath })
       : await page.screenshot({ path: savedPath });
 
-    return { preset: vp.name, width: vp.width, height: vp.height, image, savedPath };
+    const findings = await collectFindings(page, vp.isMobile);
+
+    return { preset: vp.name, width: vp.width, height: vp.height, image, savedPath, findings };
   } finally {
     await context.close();
   }

@@ -3,16 +3,16 @@
 Short recipes for when to reach for Refract and what to do with the output.
 Each is 5–15 lines: when to use it, the calls in order, what to look for.
 
-> `render_responsive` is live and returns previews + saved paths. Steps marked
-> "once findings ship" describe the v0.2 structured-findings layer, not yet built.
+> `render_responsive` is live and returns, in one response: structured findings
+> (JSON keyed by preset), absolute saved paths, and a downscaled preview per viewport.
 
 ## Playbook: verify a responsive bug fix
 
 **When:** you changed CSS to fix a layout bug at a specific width.
 1. `render_responsive({ url: "http://localhost:3000/page", viewports: ["iphone-15", "ipad-mini", "macbook-air-13"] })`
 2. Look at the returned preview for the viewport you fixed.
-3. Once findings ship: confirm the `horizontal_overflow` / `clipped` finding for
-   that viewport is gone. If it's still present, the fix didn't take.
+3. Confirm the `horizontal_overflow` / `element_clipped` finding for that viewport
+   is gone from the response. If it's still present, the fix didn't take.
 
 ## Playbook: screenshot-diff before merge
 
@@ -25,6 +25,6 @@ Each is 5–15 lines: when to use it, the calls in order, what to look for.
 
 **When:** a deployed preview URL might overflow on mobile.
 1. `render_responsive({ url: "https://pr-123.preview.app", viewports: ["mobile"] })`
-2. Once findings ship: read findings for `type: "horizontal_overflow"` — the
-   `detail` gives `scrollWidth` vs `viewport`. That's your offending width.
+2. Read the findings for `type: "horizontal_overflow"` — the `detail` gives
+   `scrollWidth` vs `viewport`. That's your offending width.
 3. No human needs to open the page; everything actionable is in the response.
