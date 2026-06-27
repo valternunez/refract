@@ -1,11 +1,13 @@
 # Refract
 
-> **Working name.** Swap for the final name everywhere before v0.1 publish.
-
 Agent-first responsive screenshots. Give a coding agent (or yourself) one
 primitive: *render this URL at N viewports, return the images, and tell me what
 visually broke.* Built on Playwright, shipped as an **MCP server + CLI + Node
 library**.
+
+![Refract renders one URL across mobile, tablet, and desktop](docs/hero.png)
+
+![refract rendering a URL and reporting findings in the terminal](docs/demo.gif)
 
 > 🚧 **Pre-release.** The engine, CLI, and MCP tool work; npm packages aren't
 > published yet, so install from source (`pnpm install && pnpm build`).

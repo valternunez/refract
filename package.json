@@ -17,7 +17,10 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
+    "@refract/core": "workspace:*",
     "@types/node": "^22.10.2",
+    "gifenc": "^1.0.3",
+    "sharp": "^0.33.5",
     "tsup": "^8.3.5",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"

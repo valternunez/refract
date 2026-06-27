@@ -11,9 +11,18 @@ importers:
       '@biomejs/biome':
         specifier: ^1.9.4
         version: 1.9.4
+      '@refract/core':
+        specifier: workspace:*
+        version: link:packages/core
       '@types/node':
         specifier: ^22.10.2
         version: 22.20.0
+      gifenc:
+        specifier: ^1.0.3
+        version: 1.0.3
+      sharp:
+        specifier: ^0.33.5
+        version: 0.33.5
       tsup:
         specifier: ^8.3.5
         version: 8.5.1(postcss@8.5.15)(typescript@5.9.3)
@@ -959,6 +968,9 @@ packages:
   get-proto@1.0.1:
     resolution: {integrity: sha512-sTSfBjoXBp89JvIKIefqw7U2CCebsc74kiY6awiGogKtoSGbgjYE/G/+l9sF3MWFPNc9IcoOC4ODfKHfxFmp0g==}
     engines: {node: '>= 0.4'}
+
+  gifenc@1.0.3:
+    resolution: {integrity: sha512-xdr6AdrfGBcfzncONUOlXMBuc5wJDtOueE3c5rdG0oNgtINLD+f2iFZltrBRZYzACRbKr+mSVU/x98zv2u3jmw==}
 
   gopd@1.2.0:
     resolution: {integrity: sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==}
@@ -2168,6 +2180,8 @@ snapshots:
     dependencies:
       dunder-proto: 1.0.1
       es-object-atoms: 1.1.2
+
+  gifenc@1.0.3: {}
 
   gopd@1.2.0: {}
 

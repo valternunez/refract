@@ -35,3 +35,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   v0.2 findings checks, locked by `demo-site.test.ts`.
 - Monorepo scaffold: strict TypeScript, tsup builds, Biome, Vitest, and CI
   (lint/build/test on push/PR to `main`).
+- README demo assets — a viewport montage (`docs/hero.png`) and a terminal GIF
+  (`docs/demo.gif`), both regenerable via `scripts/gen-hero.mjs` / `gen-demo.mjs`.
+- Publish-readiness: `keywords`, `author`, and `publishConfig.access: public` on
+  each package, plus per-package READMEs; `pnpm -r publish --dry-run` produces
+  clean tarballs (`dist` + README + LICENSE). Not yet published — owning the
+  `@refract` npm scope and bumping off `0.0.0` come at release time.
