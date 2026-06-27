@@ -38,9 +38,10 @@ function runChecks({ isMobile }: { isMobile: boolean }): Finding[] {
 
   const cssPath = (el: Element): string => {
     const tag = el.tagName.toLowerCase();
-    if (el.id) return `${tag}#${el.id}`;
+    // Tailwind-style tokens (md:flex, w-1/2) are invalid raw; CSS.escape makes them selectable.
+    if (el.id) return `${tag}#${CSS.escape(el.id)}`;
     const cls = (el.getAttribute('class') || '').trim().split(/\s+/).filter(Boolean).slice(0, 2);
-    let sel = tag + (cls.length ? `.${cls.join('.')}` : '');
+    let sel = tag + (cls.length ? `.${cls.map((c) => CSS.escape(c)).join('.')}` : '');
     const parent = el.parentElement;
     if (parent) {
       const sameTag = Array.from(parent.children).filter((c) => c.tagName === el.tagName);
@@ -50,7 +51,21 @@ function runChecks({ isMobile }: { isMobile: boolean }): Finding[] {
   };
   const visible = (el: Element): boolean => {
     const r = el.getBoundingClientRect();
-    return r.width > 0 && r.height > 0;
+    if (r.width <= 0 || r.height <= 0) return false;
+    const s = getComputedStyle(el);
+    return s.visibility !== 'hidden' && s.opacity !== '0';
+  };
+  // True if any ancestor clips/scrolls horizontally — such an element overflowing
+  // its own container doesn't break the page (carousels, overflow:auto scrollers).
+  const inClipContainer = (el: Element): boolean => {
+    let p = el.parentElement;
+    while (p && p !== document.documentElement) {
+      const s = getComputedStyle(p);
+      const ox = s.overflowX === 'visible' ? s.overflow : s.overflowX;
+      if (ox === 'hidden' || ox === 'clip' || ox === 'auto' || ox === 'scroll') return true;
+      p = p.parentElement;
+    }
+    return false;
   };
   const addCapped = (type: Finding['type'], items: Finding[]): void => {
     if (items.length <= CAP) {
@@ -65,9 +80,21 @@ function runChecks({ isMobile }: { isMobile: boolean }): Finding[] {
     }
   };
 
-  // 1. Page-level horizontal overflow.
   const de = document.documentElement;
-  if (de.scrollWidth > vw) {
+  const all = Array.from(document.body.querySelectorAll('*'));
+
+  // Real, visible, rightward overflow offenders not contained by a clip/scroll
+  // ancestor. Computed first because both the page-level and per-element checks
+  // need them — a wide visibility:hidden element must not trip either check.
+  const offenders = all.filter((el) => {
+    if (!visible(el)) return false;
+    const r = el.getBoundingClientRect();
+    if (r.right <= vw + 1) return false;
+    return !inClipContainer(el);
+  });
+
+  // 1. Page-level horizontal overflow — only with a genuine visible culprit.
+  if (de.scrollWidth > vw && offenders.length > 0) {
     findings.push({
       type: 'horizontal_overflow',
       severity: 'error',
@@ -75,14 +102,7 @@ function runChecks({ isMobile }: { isMobile: boolean }): Finding[] {
     });
   }
 
-  const all = Array.from(document.body.querySelectorAll('*'));
-
   // 2. Elements sticking out past the viewport — outermost offenders only.
-  const offenders = all.filter((el) => {
-    if (!visible(el)) return false;
-    const r = el.getBoundingClientRect();
-    return r.right > vw + 1 || r.left < -1;
-  });
   const offenderSet = new Set(offenders);
   const outermost = offenders.filter((el) => {
     let p = el.parentElement;
@@ -109,7 +129,9 @@ function runChecks({ isMobile }: { isMobile: boolean }): Finding[] {
   const clipped = all.filter((el) => {
     if (el.scrollWidth <= el.clientWidth + 1) return false;
     if (!visible(el)) return false;
-    if (getComputedStyle(el).overflowX === 'visible') return false;
+    // Only hidden/clip actually truncate; visible/auto/scroll show or scroll the text.
+    const ox = getComputedStyle(el).overflowX;
+    if (ox !== 'hidden' && ox !== 'clip') return false;
     return Array.from(el.childNodes).some(
       (n) => n.nodeType === 3 && (n.textContent || '').trim().length > 0,
     );

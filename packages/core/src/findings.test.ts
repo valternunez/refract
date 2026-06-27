@@ -80,3 +80,90 @@ describe('collectFindings', () => {
     }
   });
 });
+
+describe('collectFindings false positives', () => {
+  let browser: Browser;
+
+  beforeAll(async () => {
+    browser = await chromium.launch();
+  });
+
+  afterAll(async () => {
+    await browser.close();
+  });
+
+  // Runs `html` in a 375×667 page and returns the findings.
+  async function findingsFor(html: string) {
+    const context = await browser.newContext({ viewport: { width: 375, height: 667 } });
+    try {
+      const page = await context.newPage();
+      await page.setContent(html, { waitUntil: 'load' });
+      return { findings: await collectFindings(page, true), page, context };
+    } catch (err) {
+      await context.close();
+      throw err;
+    }
+  }
+
+  it('ignores a visibility:hidden wide element', { timeout: 30000 }, async () => {
+    const { findings, context } = await findingsFor(
+      '<div style="visibility:hidden;width:5000px;height:40px">hidden</div>',
+    );
+    try {
+      expect(findings.find((f) => f.type === 'horizontal_overflow')).toBeUndefined();
+      expect(findings.find((f) => f.type === 'element_clipped')).toBeUndefined();
+    } finally {
+      await context.close();
+    }
+  });
+
+  it('still flags a genuinely visible wide block', { timeout: 30000 }, async () => {
+    const { findings, context } = await findingsFor(
+      '<div style="width:5000px;height:40px;background:red">visible</div>',
+    );
+    try {
+      expect(findings.find((f) => f.type === 'horizontal_overflow')).toBeDefined();
+      expect(findings.find((f) => f.type === 'element_clipped')).toBeDefined();
+    } finally {
+      await context.close();
+    }
+  });
+
+  it('does not flag text in an overflow:auto container', { timeout: 30000 }, async () => {
+    const { findings, context } = await findingsFor(
+      '<div style="width:200px;overflow:auto;white-space:nowrap">' +
+        'this is a very long line of text that exceeds the container width significantly indeed' +
+        '</div>',
+    );
+    try {
+      expect(findings.find((f) => f.type === 'text_overflow')).toBeUndefined();
+    } finally {
+      await context.close();
+    }
+  });
+
+  it('does not flag an offscreen left:-9999px element', { timeout: 30000 }, async () => {
+    const { findings, context } = await findingsFor(
+      '<div style="position:absolute;left:-9999px;width:200px;height:40px">skip link</div>',
+    );
+    try {
+      expect(findings.find((f) => f.type === 'element_clipped')).toBeUndefined();
+    } finally {
+      await context.close();
+    }
+  });
+
+  it('emits a valid selector for a Tailwind-classed overflower', { timeout: 30000 }, async () => {
+    const { findings, page, context } = await findingsFor(
+      '<div class="md:flex" style="width:5000px;height:40px;background:red">wide</div>',
+    );
+    try {
+      const clipped = findings.find((f) => f.type === 'element_clipped');
+      if (!clipped?.selector) throw new Error('expected an element_clipped finding with selector');
+      const matched = await page.$(clipped.selector);
+      expect(matched).not.toBeNull();
+    } finally {
+      await context.close();
+    }
+  });
+});

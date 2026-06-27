@@ -150,8 +150,11 @@ async function navigate(page: Page, url: string): Promise<void> {
   }
 
   if (response && response.status() >= 400) {
+    const status = response.statusText()
+      ? `${response.status()} ${response.statusText()}`
+      : `${response.status()}`;
     throw new Error(
-      `"${url}" returned HTTP ${response.status()} ${response.statusText()}. Check the path and that the server is healthy.`,
+      `"${url}" returned HTTP ${status}. Check the path and that the server is healthy.`,
     );
   }
 }
@@ -163,8 +166,16 @@ async function smartWaits(page: Page, waitFor?: string): Promise<void> {
   await page.evaluate(() => document.fonts.ready);
   await settleLayout(page);
 
-  // Playwright's own timeout error already names the selector and the timeout.
-  if (waitFor) await page.waitForSelector(waitFor, { timeout: 10000 });
+  if (waitFor) {
+    try {
+      await page.waitForSelector(waitFor, { timeout: 10000 });
+    } catch {
+      // Errors teach: name the selector and point at concrete fixes.
+      throw new Error(
+        `waitFor selector "${waitFor}" never appeared within 10s — check it is spelled correctly and actually renders on this page (try freeze: true if it animates in).`,
+      );
+    }
+  }
 }
 
 /** Wait until no layout-shift for 500ms, bounded at 3s. */
