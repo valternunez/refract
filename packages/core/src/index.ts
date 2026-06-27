@@ -43,6 +43,12 @@ export interface RenderOptions {
    * @example injectCss: '#clock, .ad { visibility: hidden }'
    */
   injectCss?: string;
+  /**
+   * Draw outline boxes over each finding (using its `rect`) before capturing, so the
+   * screenshot shows what broke. Errors are outlined red, warnings amber. Full-page only —
+   * ignored when `selector` clips to one element. Off by default.
+   */
+  annotate?: boolean;
   /** Explicit gate: wait for this selector before capturing. */
   waitFor?: string;
   /**
@@ -116,6 +122,7 @@ export async function render(options: RenderOptions): Promise<Shot[]> {
     selector,
     freeze = false,
     injectCss,
+    annotate = false,
     waitFor,
     waitForFunction,
     networkIdleMs,
@@ -181,6 +188,7 @@ export async function render(options: RenderOptions): Promise<Shot[]> {
         selector,
         freeze,
         injectCss,
+        annotate,
         waitFor,
         waitForFunction,
         networkIdleMs,
@@ -198,6 +206,7 @@ interface RenderOneOpts {
   selector?: string;
   freeze: boolean;
   injectCss?: string;
+  annotate?: boolean;
   waitFor?: string;
   waitForFunction?: string;
   networkIdleMs?: number;
@@ -232,6 +241,12 @@ async function renderOne(
     // they neither show in the shot nor get flagged as findings.
     if (opts.injectCss) await page.addStyleTag({ content: opts.injectCss });
 
+    // Findings are collected before the screenshot so `annotate` can draw their boxes
+    // into the capture. Findings read document-absolute geometry, so capturing after is fine.
+    const findings = await collectFindings(page, vp.isMobile);
+    // Annotation overlays the full page; it's meaningless on a single clipped element.
+    if (opts.annotate && !opts.selector) await drawAnnotations(page, findings);
+
     const savedPath = join(opts.outDir, `${vp.name}.png`);
     let image: Buffer;
     if (opts.selector) {
@@ -250,8 +265,6 @@ async function renderOne(
     } else {
       image = await page.screenshot({ path: savedPath });
     }
-
-    const findings = await collectFindings(page, vp.isMobile);
 
     return {
       preset: vp.name,
@@ -384,6 +397,30 @@ async function applyFreeze(page: Page): Promise<void> {
     for (const img of document.querySelectorAll('img[loading="lazy"]'))
       (img as HTMLImageElement).loading = 'eager';
   });
+}
+
+/**
+ * Overlay an outline box on each finding that has a `rect` (errors red, warnings amber)
+ * so the screenshot shows what broke. Boxes use document-absolute coordinates, so they
+ * line up whether or not the page is scrolled. The layer is non-interactive and on top.
+ */
+async function drawAnnotations(page: Page, findings: Finding[]): Promise<void> {
+  await page.evaluate((items) => {
+    const layer = document.createElement('div');
+    layer.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none;z-index:2147483647';
+    for (const f of items) {
+      if (!f.rect) continue;
+      const color = f.severity === 'error' ? '#ef4444' : '#f59e0b';
+      const box = document.createElement('div');
+      box.style.cssText = `position:absolute;left:${f.rect.x}px;top:${f.rect.y}px;width:${f.rect.width}px;height:${f.rect.height}px;outline:2px solid ${color};outline-offset:1px;box-sizing:border-box`;
+      const tag = document.createElement('span');
+      tag.textContent = f.type;
+      tag.style.cssText = `position:absolute;left:0;top:-15px;font:600 10px/14px system-ui,sans-serif;color:#fff;background:${color};padding:0 4px;white-space:nowrap;border-radius:2px`;
+      box.appendChild(tag);
+      layer.appendChild(box);
+    }
+    document.body.appendChild(layer);
+  }, findings);
 }
 
 /** Run `fn` over `items` with at most `limit` in flight, preserving input order. */

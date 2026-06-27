@@ -154,6 +154,23 @@ describe('render', () => {
     expect(had(injected)).toBe(false);
   });
 
+  it('annotate draws finding boxes, changing the pixels', { timeout: 30000 }, async () => {
+    // The demo overflows at mobile, so there are findings (with rects) to outline.
+    // freeze on both so the only difference is the annotation overlay (not the badge animation).
+    const [plain] = await render({ url: demo, viewports: ['mobile'], out: outDir, freeze: true });
+    const [annotated] = await render({
+      url: demo,
+      viewports: ['mobile'],
+      out: outDir,
+      freeze: true,
+      annotate: true,
+    });
+    if (!plain || !annotated) throw new Error('expected one shot each');
+    // Same geometry, but the overlay boxes make the bytes differ.
+    expect(annotated.width).toBe(plain.width);
+    expect(annotated.image.equals(plain.image)).toBe(false);
+  });
+
   it('throws a teaching error when the selector matches nothing', { timeout: 45000 }, async () => {
     // A no-match selector must name itself + the viewport, not surface a raw locator
     // timeout. This also pins mapPool's fail-fast: a failing viewport rejects render().

@@ -21,6 +21,7 @@ interface Flags {
   waitForNetworkIdleMs?: string;
   freeze?: boolean;
   injectCss?: string;
+  annotate?: boolean;
   dpr?: string;
   concurrency?: string;
   storageState?: string;
@@ -96,6 +97,7 @@ function renderOptions(url: string, flags: Flags): RenderOptions {
     networkIdleMs: positiveNumber(flags.waitForNetworkIdleMs, '--wait-for-network-idle-ms'),
     freeze: flags.freeze,
     injectCss: flags.injectCss,
+    annotate: flags.annotate,
     dpr: positiveNumber(flags.dpr, '--dpr'),
     concurrency: positiveNumber(flags.concurrency, '--concurrency'),
     storageState: flags.storageState,
@@ -103,8 +105,9 @@ function renderOptions(url: string, flags: Flags): RenderOptions {
   };
 }
 
-addRenderFlags(cli.command('<url>', 'Render responsive screenshots of a URL')).action(
-  async (url: string, flags: Flags) => {
+addRenderFlags(cli.command('<url>', 'Render responsive screenshots of a URL'))
+  .option('--annotate', 'Draw outline boxes over findings onto the screenshot')
+  .action(async (url: string, flags: Flags) => {
     try {
       const shots = await render(renderOptions(url, flags));
       for (const s of shots) {
@@ -127,8 +130,7 @@ addRenderFlags(cli.command('<url>', 'Render responsive screenshots of a URL')).a
       console.error(`refract: ${msg}`);
       process.exitCode = 1;
     }
-  },
-);
+  });
 
 addRenderFlags(cli.command('diff <url>', 'Compare a render against a baseline'))
   .option('--baseline <dir>', 'Baseline directory', { default: './refract-baseline' })

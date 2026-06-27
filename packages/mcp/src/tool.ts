@@ -28,7 +28,8 @@ Example:
 It also returns structured findings per viewport — horizontal overflow (naming the element that causes it), elements clipped past the viewport, clipped or truncated text, tap targets under 44×44 on mobile, body text under 12px on mobile, a missing viewport meta tag, and images missing alt — so you can act on issues without eyeballing pixels. A finding looks like { type: "horizontal_overflow", severity: "error", detail: "scrollWidth=420 viewport=375", selector: "div.card", rect: { x: 0, y: 120, width: 420, height: 80 } }. The rect is the culprit's box in document pixels, so you can zoom straight to what broke.
 
 You can narrow viewports (render_responsive({ url, viewports: ["iphone-15", "1440x900"] }))
-and clip to one element (render_responsive({ url, selector: ".hero" })). If the page is
+and clip to one element (render_responsive({ url, selector: ".hero" })). Pass annotate: true to
+draw outline boxes over the findings onto the preview, so you can see exactly what broke. If the page is
 ready only after some app-specific signal, gate on it with waitForFunction (render_responsive({ url, waitForFunction: "window.__ready === true" })).
 
 To screenshot pages behind a login, pass storageState — a saved Playwright auth state
@@ -54,6 +55,12 @@ export const renderResponsiveSchema = {
     .describe('Preset names or WxH. Defaults to mobile, tablet, desktop.'),
   selector: z.string().optional().describe('CSS selector to clip the screenshot to one element.'),
   freeze: z.boolean().optional().describe('Disable animations and force eager image loading.'),
+  annotate: z
+    .boolean()
+    .optional()
+    .describe(
+      'Draw outline boxes over each finding (errors red, warnings amber) onto the screenshot, so the preview shows what broke. Full-page only (ignored with selector).',
+    ),
   injectCss: z
     .string()
     .optional()
@@ -207,7 +214,15 @@ type DiffResponsiveArgs = z.infer<z.ZodObject<typeof diffResponsiveSchema>>;
  * viewport, and the path to an HTML report. Failures come back as a teaching error.
  */
 export async function diffResponsive(args: DiffResponsiveArgs): Promise<CallToolResult> {
-  const { baseline = './refract-baseline', update, threshold, ...renderArgs } = args;
+  // `annotate` is dropped here: drawing finding boxes onto the renders would pollute the
+  // pixel diff. It's part of the shared schema but only meaningful for render_responsive.
+  const {
+    baseline = './refract-baseline',
+    update,
+    threshold,
+    annotate: _annotate,
+    ...renderArgs
+  } = args;
   let shots: Awaited<ReturnType<typeof render>>;
   try {
     shots = await render(renderArgs);

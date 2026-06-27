@@ -6,6 +6,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **Annotated screenshots (`--annotate` / `annotate`).** Draw outline boxes over each finding
+  (using its `rect`) onto the screenshot — errors red, warnings amber — so the image itself
+  shows what broke. Off by default; full-page only (ignored when `selector` clips to one
+  element). In core (`render({ annotate: true })`), the CLI (`--annotate`), and MCP
+  `render_responsive`.
 - **Two new findings heuristics.** `text_too_small` (warn) flags body text under 12px on a
   mobile viewport — short labels/badges are ignored, so it's low-noise — and
   `viewport_meta_missing` (error) flags a page with no `<meta name="viewport">`, which makes
