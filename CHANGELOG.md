@@ -24,5 +24,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   response, a text manifest of absolute saved paths plus a downscaled preview
   image (≤800px wide) per viewport; render failures surface as teaching errors.
   A repo-root `.mcp.json` registers the local server for use in Claude Code.
+- `examples/demo-site`: an intentionally-broken responsive page (horizontal
+  overflow, sub-44px tap target, clipped text, image without `alt`, plus an
+  animated badge for `--freeze`) — a manual smoke target and the fixture for the
+  v0.2 findings checks, locked by `demo-site.test.ts`.
 - Monorepo scaffold: strict TypeScript, tsup builds, Biome, Vitest, and CI
   (lint/build/test on push/PR to `main`).
