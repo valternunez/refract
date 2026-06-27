@@ -1,0 +1,6 @@
+{
+  "name": "@refract/demo-site",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Tiny static site for manual smoke tests and (v0.2) findings fixtures."
+}

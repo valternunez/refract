@@ -1,0 +1,20 @@
+{
+  "name": "@refract/mcp",
+  "version": "0.0.0",
+  "description": "Refract MCP server — exposes render_responsive so coding agents can do responsive QA.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "refract-mcp": "./dist/index.js"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.13.0",
+    "@refract/core": "workspace:*",
+    "zod": "^3.24.1"
+  }
+}

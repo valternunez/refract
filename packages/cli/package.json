@@ -1,0 +1,19 @@
+{
+  "name": "@refract/cli",
+  "version": "0.0.0",
+  "description": "Refract CLI — `refract <url>` renders responsive screenshots from the terminal.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "refract": "./dist/index.js"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@refract/core": "workspace:*",
+    "cac": "^6.7.14"
+  }
+}
