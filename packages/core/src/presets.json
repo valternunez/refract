@@ -77,6 +77,14 @@
       "hasTouch": true,
       "isMobile": true
     },
+    "iphone-13-mini": {
+      "width": 375,
+      "height": 812,
+      "deviceScaleFactor": 3,
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+      "hasTouch": true,
+      "isMobile": true
+    },
     "galaxy-s26-ultra": {
       "width": 412,
       "height": 891,
@@ -194,6 +202,33 @@
       "hasTouch": true,
       "isMobile": true
     },
+    "xiaomi-15": {
+      "width": 400,
+      "height": 890,
+      "deviceScaleFactor": 3,
+      "userAgent": "Mozilla/5.0 (Linux; Android 15; 24129PN74G) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36",
+      "hasTouch": true,
+      "isMobile": true,
+      "_note": "Xiaomi 15 (global, model 24129PN74G, HyperOS 2 / Android 15), 6.36in 1200x2670 panel. Viewport 400x890 @3 per phone-simulator.com and screensizechecker.com."
+    },
+    "redmi-note-14": {
+      "width": 393,
+      "height": 873,
+      "deviceScaleFactor": 2.75,
+      "userAgent": "Mozilla/5.0 (Linux; Android 14; 24117RN76G) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36",
+      "hasTouch": true,
+      "isMobile": true,
+      "_note": "Redmi Note 14 4G (global, model 24117RN76G, HyperOS / Android 14), 6.67in 1080x2400 panel. Viewport 393x873 @2.75 derived from panel / DPR 2.75 (the established mapping for 1080x2400 Redmi Note panels); not yet in major spec databases, so some sources may report ~393x851."
+    },
+    "oneplus-13": {
+      "width": 412,
+      "height": 905,
+      "deviceScaleFactor": 3.5,
+      "userAgent": "Mozilla/5.0 (Linux; Android 15; CPH2653) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36",
+      "hasTouch": true,
+      "isMobile": true,
+      "_note": "OnePlus 13 (global, model CPH2653, OxygenOS 15 / Android 15), 6.82in 1440x3168 panel. Viewport 412x905 @3.5 per yesviz.com and phone-simulator.com."
+    },
     "ipad-pro-13": {
       "width": 1032,
       "height": 1376,
@@ -295,6 +330,15 @@
       "hasTouch": false,
       "isMobile": false
     },
+    "surface-pro": {
+      "width": 1440,
+      "height": 960,
+      "deviceScaleFactor": 2,
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+      "hasTouch": true,
+      "isMobile": false,
+      "_note": "Surface Pro (11th Edition, 2024), 13in 2880x1920 PixelSense panel running full Windows. Landscape viewport 1440x960 @2 (panel / DPR 2). hasTouch:true but isMobile:false since it runs desktop Windows."
+    },
     "chromebook": {
       "width": 1366,
       "height": 768,
@@ -360,6 +404,15 @@
       "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
       "hasTouch": false,
       "isMobile": false
+    },
+    "desktop-ultrawide": {
+      "width": 3440,
+      "height": 1440,
+      "deviceScaleFactor": 1,
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+      "hasTouch": false,
+      "isMobile": false,
+      "_note": "21:9 ultrawide monitor (e.g. 34in WQHD ultrawide), 3440x1440 native at DPR 1."
     }
   }
 }
