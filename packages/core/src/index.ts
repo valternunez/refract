@@ -126,6 +126,9 @@ export async function render(options: RenderOptions): Promise<Shot[]> {
     engine = 'chromium',
   } = options;
 
+  // `core` is a published library: untyped JS callers can pass anything, so validate
+  // the engine here with a teaching error (same as resolveViewport/storageState do)
+  // rather than let `undefined.launch()` blow up. The CLI/MCP layers validate too.
   if (!ENGINES[engine]) {
     throw new Error(`Unknown engine "${engine}". Valid engines: chromium, webkit.`);
   }
@@ -165,7 +168,7 @@ export async function render(options: RenderOptions): Promise<Shot[]> {
     browser = await ENGINES[engine].launch();
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    if (/install|Executable doesn't exist/i.test(message)) {
+    if (/Executable doesn't exist|playwright install/i.test(message)) {
       throw new Error(
         `Browser engine "${engine}" isn't installed. Run \`npx playwright install ${engine}\` and try again.`,
       );
@@ -230,9 +233,23 @@ async function renderOne(
     if (opts.injectCss) await page.addStyleTag({ content: opts.injectCss });
 
     const savedPath = join(opts.outDir, `${vp.name}.png`);
-    const image = opts.selector
-      ? await page.locator(opts.selector).screenshot({ path: savedPath })
-      : await page.screenshot({ path: savedPath });
+    let image: Buffer;
+    if (opts.selector) {
+      try {
+        image = await page.locator(opts.selector).screenshot({ path: savedPath });
+      } catch (err) {
+        // A no-match selector surfaces as a raw 30s locator timeout — teach instead.
+        const message = err instanceof Error ? err.message : String(err);
+        if (/timeout/i.test(message)) {
+          throw new Error(
+            `Selector "${opts.selector}" didn't match a visible element at ${vp.name} (${vp.width}×${vp.height}) within 30s. Check the selector, or that the element exists and is visible at this viewport.`,
+          );
+        }
+        throw err;
+      }
+    } else {
+      image = await page.screenshot({ path: savedPath });
+    }
 
     const findings = await collectFindings(page, vp.isMobile);
 
@@ -272,11 +289,15 @@ async function navigate(page: Page, url: string): Promise<void> {
   }
 
   if (response && response.status() >= 400) {
-    const status = response.statusText()
-      ? `${response.status()} ${response.statusText()}`
-      : `${response.status()}`;
+    const code = response.status();
+    const status = response.statusText() ? `${code} ${response.statusText()}` : `${code}`;
+    if (code >= 500) {
+      throw new Error(
+        `"${url}" returned HTTP ${status} — the server errored. Check its logs and that it's healthy.`,
+      );
+    }
     throw new Error(
-      `"${url}" returned HTTP ${status}. Check the path and that the server is healthy.`,
+      `"${url}" returned HTTP ${status} — the page isn't there. Check the path/URL is correct.`,
     );
   }
 }

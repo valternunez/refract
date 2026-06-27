@@ -74,8 +74,18 @@ export async function diffShots(
         return { ...base, status: 'no_baseline' };
       }
 
-      const baseline = PNG.sync.read(baselineBuf);
-      const current = PNG.sync.read(shot.image);
+      // A corrupt/truncated baseline PNG would throw a raw pngjs error and reject the
+      // whole batch. Treat it as `no_baseline` — same remedy (re-run with --update) —
+      // so one bad file can't crash diffing the others. `shot.image` is our own fresh
+      // render, but decode it inside the same guard rather than assume it can't fail.
+      let baseline: PNG;
+      let current: PNG;
+      try {
+        baseline = PNG.sync.read(baselineBuf);
+        current = PNG.sync.read(shot.image);
+      } catch {
+        return { ...base, status: 'no_baseline' };
+      }
 
       if (baseline.width !== current.width || baseline.height !== current.height) {
         return {
@@ -114,6 +124,14 @@ const STATUS_COLOR: Record<DiffStatus, string> = {
   no_baseline: '#94a3b8',
 };
 
+/** Escape a string for safe interpolation into the report HTML. */
+function esc(s: string): string {
+  return s.replace(
+    /[&<>"]/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string,
+  );
+}
+
 /** A relative, forward-slashed href from the report dir to a file (for `<img src>`). */
 function href(fromDir: string, file: string): string {
   return relative(fromDir, file).split('\\').join('/');
@@ -142,11 +160,11 @@ export async function writeDiffReport(results: DiffResult[], outDir: string): Pr
         r.status === 'size_changed'
           ? ` · ${r.baselineWidth}×${r.baselineHeight} → ${r.width}×${r.height}`
           : ` · ${r.width}×${r.height}`;
-      const aliases = r.aliases?.length ? ` · also ${r.aliases.join(', ')}` : '';
+      const aliases = r.aliases?.length ? ` · also ${esc(r.aliases.join(', '))}` : '';
       return `<section class="card">
       <header>
         <span class="badge" style="--c:${STATUS_COLOR[r.status]}">${r.status}</span>
-        <h2>${r.preset}</h2>
+        <h2>${esc(r.preset)}</h2>
         <span class="meta">${size}${pct}${aliases}</span>
       </header>
       <div class="cols">

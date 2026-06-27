@@ -44,3 +44,22 @@ Each is 5–15 lines: when to use it, the calls in order, what to look for.
 2. Read the findings for `type: "horizontal_overflow"` — the `detail` gives
    `scrollWidth` vs `viewport`. That's your offending width.
 3. No human needs to open the page; everything actionable is in the response.
+
+## Playbook: check a layout in the real Safari/WebKit engine
+
+**When:** a bug reproduces on iOS Safari but not Chrome (flexbox/gap, sticky, `100vh`).
+1. Install WebKit once: `npx playwright install webkit`.
+2. `render_responsive({ url, viewports: ["iphone-15"], engine: "webkit" })` — renders
+   with the actual WebKit engine (≈ iOS Safari), not Chromium emulation.
+3. Compare against the default Chromium render to confirm it's engine-specific. For a
+   before/after diff, keep the two engines in separate baselines (e.g. CLI
+   `--baseline ./baseline-webkit --engine webkit`) so they never compare across engines.
+
+## Playbook: gate a PR on visual regressions in CI
+
+**When:** you want every PR to fail if it visually breaks a page.
+1. Copy `examples/github-actions/visual-diff.yml` into `.github/workflows/`.
+2. It renders the deployed preview with `refract diff <url> --freeze` against a committed
+   baseline; `refract diff` exits non-zero on any `changed`/`size_changed`, failing the job.
+3. The workflow uploads the `report.html` + diff PNGs as an artifact for review. To accept
+   intended changes, re-run `refract diff <url> --update` and commit the new baselines.

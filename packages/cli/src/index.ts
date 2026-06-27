@@ -37,6 +37,16 @@ function positiveNumber(value: string | undefined, flag: string): number | undef
   return n;
 }
 
+/** Parse an optional 0–1 fraction flag (pixelmatch threshold), teaching the valid range. */
+function fraction(value: string | undefined, flag: string): number | undefined {
+  if (value === undefined) return undefined;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0 || n > 1) {
+    throw new Error(`${flag} must be a number between 0 and 1, got "${value}".`);
+  }
+  return n;
+}
+
 /** Validate the optional --engine flag, teaching the user the valid choices. */
 function parseEngine(value: string | undefined): 'chromium' | 'webkit' | undefined {
   if (value === undefined) return undefined;
@@ -120,6 +130,8 @@ addRenderFlags(cli.command('diff <url>', 'Compare a render against a baseline'))
   .option('--threshold <n>', 'pixelmatch sensitivity 0-1 (default 0.1)')
   .action(async (url: string, flags: DiffFlags) => {
     try {
+      // Validate up front so a bad --threshold fails before the (slow) render.
+      const threshold = fraction(flags.threshold, '--threshold');
       const shots = await render(renderOptions(url, flags));
       const baselineDir = resolve(flags.baseline);
       const outDir = resolve(flags.out);
@@ -133,11 +145,7 @@ addRenderFlags(cli.command('diff <url>', 'Compare a render against a baseline'))
         return;
       }
 
-      const results = await diffShots(shots, {
-        baselineDir,
-        outDir,
-        threshold: positiveNumber(flags.threshold, '--threshold'),
-      });
+      const results = await diffShots(shots, { baselineDir, outDir, threshold });
 
       let regressions = 0;
       for (const r of results) {

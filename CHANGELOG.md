@@ -11,14 +11,6 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   or `engine` (MCP `render_responsive`/`diff_responsive`). Default stays `chromium`;
   install WebKit once with `npx playwright install webkit`. A missing engine returns a
   teaching error. Firefox is intentionally not supported yet.
-
-### Changed
-- **`text_overflow` ignores intentional ellipsis truncation.** Elements with
-  `text-overflow: ellipsis` (the `.truncate` utility) are designed to truncate, so
-  they're no longer flagged — only hard clipping with no ellipsis is. Cuts the
-  false-positive noise seen on real dashboards; genuine clipping is still caught.
-
-### Added
 - **CI recipe.** A copy-ready GitHub Actions workflow
   (`examples/github-actions/visual-diff.yml`) + README "Use in CI" section that run
   `refract diff` against a deployed preview on each PR, fail on a regression, and
@@ -64,7 +56,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   on `Shot.findings` (core), printed under each shot (CLI), and returned as JSON
   keyed by preset (MCP `render_responsive`).
 - `@getrefractjs/core`: `render()` — screenshots a URL at N viewports using a single
-  Chromium browser with one context per viewport, rendered in parallel
+  browser (Chromium by default, WebKit via `engine`) with one context per viewport, rendered in parallel
   (concurrency capped at `os.cpus().length`, overridable). Smart waits
   (networkidle best-effort, fonts ready, layout-shift settle, optional `waitFor`
   selector), `freeze` mode (disables animations/transitions, forces eager image
@@ -79,7 +71,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `mobile`/`tablet`/`desktop` groups, or a `WxH` token, and `listPresetNames()`.
 - `@getrefractjs/cli`: `refract <url>` renders screenshots to disk, with `--viewports`,
   `--out`, `--selector`, `--freeze`, `--dpr`, and `--concurrency`.
-- `@getrefractjs/mcp`: `render_responsive` renders via the engine and returns, in one
+- `@getrefractjs/mcp`: `render_responsive` renders the URL and returns, in one
   response, a text manifest of absolute saved paths plus a downscaled preview
   image (≤800px wide) per viewport; render failures surface as teaching errors.
   A repo-root `.mcp.json` registers the local server for use in Claude Code.
@@ -99,3 +91,23 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Security policy (`SECURITY.md`) and contributor docs (`CONTRIBUTING.md`,
   `CODE_OF_CONDUCT.md`); the README documents that Refract loads any URL, including
   `file://` and internal hosts.
+
+### Changed
+- **`text_overflow` ignores intentional ellipsis truncation.** Elements with
+  `text-overflow: ellipsis` (the `.truncate` utility) are designed to truncate, so
+  they're no longer flagged — only hard clipping with no ellipsis is. Cuts the
+  false-positive noise seen on real dashboards; genuine clipping is still caught.
+- **HTTP error messages distinguish 4xx from 5xx.** A 4xx now teaches "the page isn't
+  there — check the path/URL"; a 5xx teaches "the server errored — check its logs".
+
+### Fixed
+- **A corrupt baseline PNG no longer crashes `refract diff`.** A truncated/invalid
+  baseline file is reported as `no_baseline` (re-create it with `--update`) for that
+  viewport instead of throwing a raw decode error that aborted the whole run.
+- **A `--selector` / `selector` that matches nothing now teaches.** Instead of a raw
+  30s Playwright locator timeout, it reports which selector failed at which viewport.
+- **`--threshold` is validated to 0–1.** The CLI now rejects out-of-range values (and
+  accepts `0`) with a clear message; the MCP `diff_responsive` schema enforces the same
+  bound. Previously `0` was wrongly rejected and values above `1` were silently accepted.
+- **The diff `report.html` escapes interpolated preset/alias text** (defense-in-depth
+  for the human-opened local report).

@@ -153,4 +153,12 @@ describe('render', () => {
     if (!injected) throw new Error('expected one shot');
     expect(had(injected)).toBe(false);
   });
+
+  it('throws a teaching error when the selector matches nothing', { timeout: 45000 }, async () => {
+    // A no-match selector must name itself + the viewport, not surface a raw locator
+    // timeout. This also pins mapPool's fail-fast: a failing viewport rejects render().
+    await expect(
+      render({ url: demo, viewports: ['400x800'], out: outDir, selector: '.does-not-exist' }),
+    ).rejects.toThrow(/didn't match.*400×800|selector "\.does-not-exist"/is);
+  });
 });

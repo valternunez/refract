@@ -87,4 +87,19 @@ describe('diff', () => {
     expect(html).toContain('300x300');
     expect(html).toContain('Refract diff report');
   });
+
+  it(
+    'treats a corrupt baseline as no_baseline instead of crashing',
+    { timeout: 30000 },
+    async () => {
+      const red = await fixture(fixDir, 'a', 'red');
+      // A non-PNG file sitting where the baseline should be must not throw a raw pngjs
+      // decode error that rejects the whole batch.
+      await writeFile(join(baselineDir, '300x300.png'), 'not a png');
+      const shots = await render({ url: red, viewports: ['300x300'], out: outDir, dpr: 1 });
+
+      const [r] = await diffShots(shots, { baselineDir, outDir });
+      expect(r?.status).toBe('no_baseline');
+    },
+  );
 });

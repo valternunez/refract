@@ -89,9 +89,12 @@ const MAX_PREVIEW_WIDTH = 800;
  * agent's context window. Narrower images are returned untouched.
  */
 export async function downscalePreview(png: Buffer): Promise<Buffer> {
-  const { width } = await sharp(png).metadata();
+  // One sharp instance for both the header read and the resize, so the buffer is
+  // parsed once. Narrow images are returned untouched (no re-encode).
+  const image = sharp(png);
+  const { width } = await image.metadata();
   if (!width || width <= MAX_PREVIEW_WIDTH) return png;
-  return sharp(png).resize({ width: MAX_PREVIEW_WIDTH }).png().toBuffer();
+  return image.resize({ width: MAX_PREVIEW_WIDTH }).png().toBuffer();
 }
 
 /**
@@ -177,7 +180,12 @@ export const diffResponsiveSchema = {
     .boolean()
     .optional()
     .describe('Write the current renders as the new baseline instead of comparing.'),
-  threshold: z.number().optional().describe('pixelmatch per-pixel sensitivity, 0-1 (default 0.1).'),
+  threshold: z
+    .number()
+    .min(0)
+    .max(1)
+    .optional()
+    .describe('pixelmatch per-pixel sensitivity, 0-1 (default 0.1).'),
 };
 
 type DiffResponsiveArgs = z.infer<z.ZodObject<typeof diffResponsiveSchema>>;
