@@ -17,6 +17,8 @@ Example:
   → renders at mobile, tablet, and desktop; returns a downscaled preview image per
     viewport plus the absolute path to the full-resolution PNG saved on disk.
 
+It also returns structured findings per viewport — horizontal overflow, elements clipped past the viewport, clipped or truncated text, tap targets under 44×44 on mobile, and images missing alt — so you can act on issues without eyeballing pixels.
+
 You can narrow viewports (render_responsive({ url, viewports: ["iphone-15", "1440x900"] }))
 and clip to one element (render_responsive({ url, selector: ".hero" })).
 
@@ -73,6 +75,14 @@ export async function renderResponsive(args: RenderResponsiveArgs): Promise<Call
   ].join('\n');
 
   const content: CallToolResult['content'] = [{ type: 'text', text: manifest }];
+  content.push({
+    type: 'text',
+    text: `Findings:\n${JSON.stringify(
+      shots.map((s) => ({ preset: s.preset, findings: s.findings })),
+      null,
+      2,
+    )}`,
+  });
   for (const shot of shots) {
     const preview = await downscalePreview(shot.image);
     content.push({ type: 'text', text: `${shot.preset} (${shot.width}×${shot.height}):` });
