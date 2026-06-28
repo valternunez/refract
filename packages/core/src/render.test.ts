@@ -19,16 +19,45 @@ describe('render', () => {
     await rm(outDir, { recursive: true, force: true });
   });
 
-  it('renders one viewport at the requested pixel size', { timeout: 30000 }, async () => {
-    const shots = await render({ url: demo, viewports: ['400x800'], out: outDir, dpr: 1 });
-    expect(shots).toHaveLength(1);
-    const shot = shots[0];
-    if (!shot) throw new Error('expected one shot');
+  it(
+    'renders one viewport at the requested width, full-page height',
+    { timeout: 30000 },
+    async () => {
+      const shots = await render({ url: demo, viewports: ['400x800'], out: outDir, dpr: 1 });
+      expect(shots).toHaveLength(1);
+      const shot = shots[0];
+      if (!shot) throw new Error('expected one shot');
 
+      expect(shot.width).toBe(400); // logical viewport width
+      const buf = await readFile(shot.savedPath);
+      // PNG IHDR: width at byte 16, height at byte 20 (big-endian). Capture is full-page, so dims
+      // are ≥ the viewport (the demo overflows slightly past 400 wide and is taller than 800).
+      expect(buf.readUInt32BE(16)).toBeGreaterThanOrEqual(400);
+      expect(buf.readUInt32BE(20)).toBeGreaterThanOrEqual(800);
+    },
+  );
+
+  it('captures the full page, not just the viewport fold', { timeout: 30000 }, async () => {
+    // A page taller than the viewport with content near the bottom — the shot must include it,
+    // so findings rects and the annotation overlay (both document-coordinate) line up.
+    const tall = join(outDir, 'tall.html');
+    await writeFile(
+      tall,
+      '<!doctype html><meta name="viewport" content="width=device-width"><body style="margin:0">' +
+        '<div style="height:2500px">top</div>' +
+        '<div style="height:200px;background:red">bottom — below the fold</div></body>',
+    );
+    const [shot] = await render({
+      url: pathToFileURL(tall).href,
+      viewports: ['400x800'],
+      out: outDir,
+      dpr: 1,
+    });
+    if (!shot) throw new Error('expected one shot');
     const buf = await readFile(shot.savedPath);
-    // PNG IHDR: width at byte 16, height at byte 20 (big-endian).
     expect(buf.readUInt32BE(16)).toBe(400);
-    expect(buf.readUInt32BE(20)).toBe(800);
+    // ~2700px of content, well past the 800px fold.
+    expect(buf.readUInt32BE(20)).toBeGreaterThan(2000);
   });
 
   it(

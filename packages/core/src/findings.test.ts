@@ -241,6 +241,57 @@ describe('collectFindings false positives', () => {
     }
   });
 
+  it('does not flag an icon/image link whose wrapped image is large enough', async () => {
+    // An inline <a> measures its line-box height (~21px), not the 100×100 image it wraps —
+    // the real tap area. Union with replaced children so it isn't a false tap_target_small.
+    const px = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+    const { findings, context } = await findingsFor(
+      `<a href="#"><img src="${px}" width="100" height="100" alt="logo"></a>`,
+    );
+    try {
+      expect(findings.find((f) => f.type === 'tap_target_small')).toBeUndefined();
+    } finally {
+      await context.close();
+    }
+  });
+
+  it('still flags a genuinely small interactive control', async () => {
+    const { findings, context } = await findingsFor(
+      '<button style="width:30px;height:30px">x</button>',
+    );
+    try {
+      const tap = findings.find((f) => f.type === 'tap_target_small');
+      if (!tap) throw new Error('expected a tap_target_small finding');
+      expect(tap.size).toBe('30x30');
+    } finally {
+      await context.close();
+    }
+  });
+
+  it('does not flag a child clipped by CSS containment (contain:paint)', async () => {
+    const { findings, context } = await findingsFor(
+      '<section style="contain:paint">' +
+        '<div style="width:2000px;height:30px;background:red">contained</div></section>',
+    );
+    try {
+      expect(findings.find((f) => f.type === 'element_clipped')).toBeUndefined();
+      expect(findings.find((f) => f.type === 'horizontal_overflow')).toBeUndefined();
+    } finally {
+      await context.close();
+    }
+  });
+
+  it('does not flag near-zero-opacity text as too small', async () => {
+    const { findings, context } = await findingsFor(
+      '<p style="opacity:0.005;font-size:9px">a full sentence of effectively invisible body copy</p>',
+    );
+    try {
+      expect(findings.find((f) => f.type === 'text_too_small')).toBeUndefined();
+    } finally {
+      await context.close();
+    }
+  });
+
   it(
     'flags a missing viewport meta on mobile, but not when present or on desktop',
     { timeout: 30000 },

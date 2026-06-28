@@ -31,7 +31,8 @@ pnpm exec playwright install chromium
 refract https://example.com --viewports mobile,tablet,desktop --out ./shots
 ```
 
-Outputs `./shots/{preset}.png`, one per viewport, and prints findings under each.
+Outputs `./shots/{preset}.png`, one per viewport (full-page, not just the fold), and
+prints findings under each.
 Flags: `--viewports`, `--out`, `--selector`, `--wait-for`, `--wait-for-function`,
 `--wait-for-network-idle-ms`, `--freeze`, `--inject-css`, `--annotate`, `--dpr`,
 `--concurrency`, `--storage-state`, `--engine`.
@@ -163,11 +164,11 @@ keep the agent's context window alive. Measured on the demo-site (3 viewports), 
 
 | response shape | Claude | GPT-4o | Gemini |
 |---|---|---|---|
-| findings only (no images) | ~620 | ~620 | ~620 |
-| **downscaled previews** (default) | **~4.2k** | ~4.0k | ~3.7k |
-| full-resolution images (naive) | ~17.7k | ~4.3k | ~8.9k |
+| findings only (no images) | ~985 | ~985 | ~985 |
+| **downscaled previews** (default) | **~4.8k** | ~4.3k | ~4.1k |
+| full-resolution images (naive) | ~21.9k | ~4.7k | ~11.1k |
 
-So Refract's default is **~76% smaller than dumping full-res screenshots** on Claude,
+So Refract's default is **~78% smaller than dumping full-res screenshots** on Claude,
 and the structured findings alone are a few hundred tokens. Re-run anytime with
 `pnpm bench`; details + per-model formulas in [benchmarks/RESULTS.md](benchmarks/RESULTS.md).
 

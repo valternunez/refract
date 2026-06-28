@@ -5,6 +5,26 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- **Full-page screenshots (were viewport-only).** A render now captures the whole page, not just the
+  first viewport fold — so the image shows what broke below the fold, and the document-coordinate
+  finding `rect`s and the `--annotate` overlay line up with the capture. (The README/MCP/JSDoc already
+  documented full-page; the screenshot call had regressed to viewport-only.) MCP previews are bounded to
+  an 800×2400 box so a long page doesn't blow the agent's context; the full-res PNG on disk stays full.
+- **`tap_target_small` no longer false-fires on icon/image links.** An inline `<a>` wrapping an image was
+  measured by its line-box height (e.g. 120×21 around a 120×120 image); tap size is now the union of the
+  control and its replaced children (`img`/`svg`/`picture`/`canvas`/`video`). Genuinely small controls
+  still fire.
+- **CSS containment respected.** A child clipped by `contain: paint | strict | content` is no longer a
+  false `element_clipped` / `horizontal_overflow`.
+- **Near-zero opacity ignored.** An effectively-invisible element (e.g. `opacity:0.001`) no longer trips
+  `text_too_small`.
+- **`--viewports <number>` teaches instead of crashing.** `--viewports 1280` (or hex like `0x0`) used to
+  throw `flags.viewports.split is not a function`; it now reaches the unknown-viewport teaching error.
+- **Dash-prefixed flag values don't dump a stack.** `--concurrency -1` / `--dpr -1` print a clean
+  `refract:` message instead of a raw `CACError` (use `--concurrency=-1` to hit the positive-number hint).
+- **A no-match `--selector` fails in ~10s instead of 30s**, with the same teaching message.
+
 ### Added
 - **Annotated screenshots (`--annotate` / `annotate`).** Draw outline boxes over each finding
   (using its `rect`) onto the screenshot — errors red, warnings amber — so the image itself

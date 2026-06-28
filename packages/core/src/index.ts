@@ -251,19 +251,22 @@ async function renderOne(
     let image: Buffer;
     if (opts.selector) {
       try {
-        image = await page.locator(opts.selector).screenshot({ path: savedPath });
+        // 10s (matches the wait budget) so a bad selector fails fast instead of the 30s default.
+        image = await page.locator(opts.selector).screenshot({ path: savedPath, timeout: 10000 });
       } catch (err) {
-        // A no-match selector surfaces as a raw 30s locator timeout — teach instead.
+        // A no-match selector surfaces as a raw locator timeout — teach instead.
         const message = err instanceof Error ? err.message : String(err);
         if (/timeout/i.test(message)) {
           throw new Error(
-            `Selector "${opts.selector}" didn't match a visible element at ${vp.name} (${vp.width}×${vp.height}) within 30s. Check the selector, or that the element exists and is visible at this viewport.`,
+            `Selector "${opts.selector}" didn't match a visible element at ${vp.name} (${vp.width}×${vp.height}) within 10s. Check the selector, or that the element exists and is visible at this viewport.`,
           );
         }
         throw err;
       }
     } else {
-      image = await page.screenshot({ path: savedPath });
+      // Full-page (not just the viewport) so the shot shows everything that broke and the
+      // document-coordinate finding rects / annotation overlay line up with the capture.
+      image = await page.screenshot({ path: savedPath, fullPage: true });
     }
 
     return {
@@ -393,9 +396,15 @@ async function applyFreeze(page: Page): Promise<void> {
     content:
       '*,*::before,*::after{animation-duration:0s!important;animation-delay:0s!important;transition-duration:0s!important;transition-delay:0s!important;}',
   });
-  await page.evaluate(() => {
-    for (const img of document.querySelectorAll('img[loading="lazy"]'))
-      (img as HTMLImageElement).loading = 'eager';
+  await page.evaluate(async () => {
+    const imgs = Array.from(document.querySelectorAll('img'));
+    for (const img of imgs) if (img.loading === 'lazy') img.loading = 'eager';
+    // Now that they're eager, await the loads (bounded) so a full-page capture doesn't catch a
+    // below-the-fold lazy image blank/mid-load — that would make repeat renders non-deterministic.
+    await Promise.race([
+      Promise.all(imgs.map((img) => img.decode().catch(() => {}))),
+      new Promise((resolve) => setTimeout(resolve, 5000)),
+    ]);
   });
 }
 

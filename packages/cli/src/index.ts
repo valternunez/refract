@@ -86,7 +86,9 @@ function addRenderFlags(cmd: Command): Command {
 function renderOptions(url: string, flags: Flags): RenderOptions {
   return {
     url,
-    viewports: flags.viewports
+    // String(): cac coerces a numeric-looking value (e.g. `--viewports 1280`, or hex `0x0`)
+    // to a number, which would crash `.split`. Stringify so it reaches the teaching error.
+    viewports: String(flags.viewports)
       .split(',')
       .map((v) => v.trim())
       .filter(Boolean),
@@ -201,4 +203,12 @@ addRenderFlags(cli.command('diff <url>', 'Compare a render against a baseline'))
 
 cli.help();
 cli.version('0.0.0');
-cli.parse();
+try {
+  // cac throws on a parse error (e.g. `--concurrency -1`, where it reads `-1` as an unknown
+  // option). Catch it so the user gets a clean message, not a raw stack. Tip: `--concurrency=-1`
+  // routes the value to our positive-number validator instead.
+  cli.parse();
+} catch (err) {
+  console.error(`refract: ${err instanceof Error ? err.message : String(err)}`);
+  process.exitCode = 1;
+}

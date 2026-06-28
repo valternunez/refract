@@ -94,20 +94,31 @@ export const renderResponsiveSchema = {
 
 type RenderResponsiveArgs = z.infer<z.ZodObject<typeof renderResponsiveSchema>>;
 
-/** Agent previews are capped at this width; the full-res PNG still lands on disk. */
+/** Agent previews are bounded to this box; the full-res PNG still lands on disk. */
 const MAX_PREVIEW_WIDTH = 800;
+/** Full-page captures of long pages can be very tall — cap the preview height too. */
+const MAX_PREVIEW_HEIGHT = 2400;
 
 /**
- * Downscale a PNG to at most {@link MAX_PREVIEW_WIDTH} wide so it doesn't blow the
- * agent's context window. Narrower images are returned untouched.
+ * Downscale a PNG to fit within {@link MAX_PREVIEW_WIDTH}×{@link MAX_PREVIEW_HEIGHT} so it
+ * doesn't blow the agent's context window (full-page shots can be very tall). Images already
+ * within the box are returned untouched.
  */
 export async function downscalePreview(png: Buffer): Promise<Buffer> {
   // One sharp instance for both the header read and the resize, so the buffer is
-  // parsed once. Narrow images are returned untouched (no re-encode).
+  // parsed once. Images already within the box are returned untouched (no re-encode).
   const image = sharp(png);
-  const { width } = await image.metadata();
-  if (!width || width <= MAX_PREVIEW_WIDTH) return png;
-  return image.resize({ width: MAX_PREVIEW_WIDTH }).png().toBuffer();
+  const { width = 0, height = 0 } = await image.metadata();
+  if (width <= MAX_PREVIEW_WIDTH && height <= MAX_PREVIEW_HEIGHT) return png;
+  return image
+    .resize({
+      width: MAX_PREVIEW_WIDTH,
+      height: MAX_PREVIEW_HEIGHT,
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
+    .png()
+    .toBuffer();
 }
 
 /**

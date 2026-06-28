@@ -74,16 +74,21 @@ function runChecks({ isMobile }: { isMobile: boolean }): Finding[] {
     const r = el.getBoundingClientRect();
     if (r.width <= 0 || r.height <= 0) return false;
     const s = getComputedStyle(el);
-    return s.visibility !== 'hidden' && s.opacity !== '0';
+    // Near-zero opacity is effectively invisible (e.g. an element mid fade-in) — don't flag it.
+    return s.visibility !== 'hidden' && Number(s.opacity) > 0.01;
   };
   // True if any ancestor clips/scrolls horizontally — such an element overflowing
-  // its own container doesn't break the page (carousels, overflow:auto scrollers).
+  // its own container doesn't break the page (carousels, overflow:auto scrollers,
+  // and CSS containment that clips paint).
   const inClipContainer = (el: Element): boolean => {
     let p = el.parentElement;
     while (p && p !== document.documentElement) {
       const s = getComputedStyle(p);
       const ox = s.overflowX === 'visible' ? s.overflow : s.overflowX;
       if (ox === 'hidden' || ox === 'clip' || ox === 'auto' || ox === 'scroll') return true;
+      // `contain: paint | strict | content` clips overflow to the box, like overflow:clip.
+      const c = s.contain;
+      if (c.includes('paint') || c.includes('strict') || c.includes('content')) return true;
       p = p.parentElement;
     }
     return false;
@@ -185,23 +190,39 @@ function runChecks({ isMobile }: { isMobile: boolean }): Finding[] {
         'a, button, input[type="button"], input[type="submit"], [role="button"], select',
       ),
     );
-    const small = interactive.filter((el) => {
-      const r = el.getBoundingClientRect();
-      return r.width > 0 && r.height > 0 && (r.width < 44 || r.height < 44);
-    });
+    // Effective tap area = the control's own box unioned with any replaced children. An
+    // inline <a> wrapping an icon/logo/image measures its line-box height (e.g. 120×21
+    // around a 120×120 image), not the image you actually tap — union fixes that.
+    const hitBox = (el: Element): NonNullable<Finding['rect']> => {
+      let { left, top, right, bottom } = el.getBoundingClientRect();
+      for (const c of el.querySelectorAll('img,svg,picture,canvas,video')) {
+        const r = c.getBoundingClientRect();
+        if (r.width <= 0 || r.height <= 0) continue;
+        left = Math.min(left, r.left);
+        top = Math.min(top, r.top);
+        right = Math.max(right, r.right);
+        bottom = Math.max(bottom, r.bottom);
+      }
+      return {
+        x: Math.round(left + sx),
+        y: Math.round(top + sy),
+        width: Math.round(right - left),
+        height: Math.round(bottom - top),
+      };
+    };
     addCapped(
       'tap_target_small',
-      small.map((el) => {
-        const r = el.getBoundingClientRect();
-        return {
+      interactive
+        .map((el) => ({ el, box: hitBox(el) }))
+        .filter(({ box }) => box.width > 0 && box.height > 0 && (box.width < 44 || box.height < 44))
+        .map(({ el, box }) => ({
           type: 'tap_target_small' as const,
           severity: 'warn' as const,
           detail: 'below 44x44 minimum',
           selector: cssPath(el),
-          size: `${Math.round(r.width)}x${Math.round(r.height)}`,
-          rect: rectOf(el),
-        };
-      }),
+          size: `${box.width}x${box.height}`,
+          rect: box,
+        })),
     );
 
     // 5. Text too small to read comfortably on a phone — mobile only. Gated on a real

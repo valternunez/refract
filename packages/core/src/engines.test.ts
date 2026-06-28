@@ -30,9 +30,12 @@ describe('engines', () => {
       });
       expect(shots).toHaveLength(1);
       const buf = await readFile(shots[0]?.savedPath as string);
-      // PNG IHDR: width at byte 16, height at byte 20 (big-endian). Both engines honor dpr.
-      expect(buf.readUInt32BE(16)).toBe(400);
-      expect(buf.readUInt32BE(20)).toBe(800);
+      // PNG IHDR: width at byte 16, height at byte 20 (big-endian). Capture is full-page, so
+      // dims are ≥ the viewport. dpr:1 keeps width in CSS px (the demo overflows a bit past 400);
+      // dpr:3 would be ~1560, so a width well under 800 proves both engines honored dpr.
+      expect(buf.readUInt32BE(16)).toBeGreaterThanOrEqual(400);
+      expect(buf.readUInt32BE(16)).toBeLessThan(800);
+      expect(buf.readUInt32BE(20)).toBeGreaterThanOrEqual(800);
     },
   );
 
