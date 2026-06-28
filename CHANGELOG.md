@@ -5,6 +5,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-28
+
 ### Fixed
 - **A hung subresource no longer fails the whole render.** Real sites constantly have a slow/stalled
   ad, tracker, font, or image; waiting for `load` (and `document.fonts.ready`, and `page.screenshot`)
