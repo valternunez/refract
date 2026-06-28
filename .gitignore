@@ -4,6 +4,7 @@ dist/
 
 # Refract output
 refract-shots/
+refract-baseline/
 shots/
 
 # Playwright

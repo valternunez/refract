@@ -216,6 +216,12 @@ interface RenderOneOpts {
   storageState?: string;
 }
 
+/**
+ * Full-page capture height cap (CSS px). A page taller than this can exceed Chromium's max
+ * screenshot dimension and fail; we truncate the image to the top instead. ×dpr stays under the limit.
+ */
+const MAX_CAPTURE_CSS = 8000;
+
 /** Render a single viewport in its own context, always closing the context. */
 async function renderOne(
   browser: Browser,
@@ -231,6 +237,9 @@ async function renderOne(
     hasTouch: vp.hasTouch,
     isMobile: vp.isMobile,
     storageState: opts.storageState,
+    // We inject our own QA CSS (freeze, injectCss); without this a strict style-src
+    // Content-Security-Policy blocks addStyleTag and the whole render throws.
+    bypassCSP: true,
   });
   try {
     const page = await context.newPage();
@@ -240,6 +249,15 @@ async function renderOne(
     // After freeze, before capture+findings: user CSS can hide flaky elements so
     // they neither show in the shot nor get flagged as findings.
     if (opts.injectCss) await page.addStyleTag({ content: opts.injectCss });
+    // Default (non-freeze) full-page path: scroll through once so IntersectionObserver/lazy
+    // content below the fold loads before the full-page capture catches it mid-load. Freeze
+    // already forces eager + awaits decode, so it skips this. Bounded by the INITIAL height so
+    // infinite-scroll pages can't grow unbounded.
+    if (!opts.selector && !opts.freeze) await prefetchLazy(page);
+    // Abort any still-pending requests (a stalled image/tracker). We've already waited for the
+    // page; a lingering request otherwise blocks page.screenshot indefinitely (it waits for the
+    // page to be stable). Like a human hitting the browser's stop button — capture what loaded.
+    await page.evaluate(() => window.stop()).catch(() => {});
 
     // Findings are collected before the screenshot so `annotate` can draw their boxes
     // into the capture. Findings read document-absolute geometry, so capturing after is fine.
@@ -247,23 +265,41 @@ async function renderOne(
     // Annotation overlays the full page; it's meaningless on a single clipped element.
     if (opts.annotate && !opts.selector) await drawAnnotations(page, findings);
 
-    const savedPath = join(opts.outDir, `${vp.name}.png`);
+    // Forward slashes so the path is portable when echoed into JSON / read by other tools
+    // (Playwright writes to it fine on Windows). "Outputs are inputs" — keep them clean.
+    const savedPath = join(opts.outDir, `${vp.name}.png`).split('\\').join('/');
     let image: Buffer;
     if (opts.selector) {
       try {
-        image = await page.locator(opts.selector).screenshot({ path: savedPath });
+        // 10s (matches the wait budget) so a bad selector fails fast instead of the 30s default.
+        image = await page.locator(opts.selector).screenshot({ path: savedPath, timeout: 10000 });
       } catch (err) {
-        // A no-match selector surfaces as a raw 30s locator timeout — teach instead.
+        // A no-match selector surfaces as a raw locator timeout — teach instead.
         const message = err instanceof Error ? err.message : String(err);
         if (/timeout/i.test(message)) {
           throw new Error(
-            `Selector "${opts.selector}" didn't match a visible element at ${vp.name} (${vp.width}×${vp.height}) within 30s. Check the selector, or that the element exists and is visible at this viewport.`,
+            `Selector "${opts.selector}" didn't match a visible element at ${vp.name} (${vp.width}×${vp.height}) within 10s. Check the selector, or that the element exists and is visible at this viewport.`,
           );
         }
         throw err;
       }
     } else {
-      image = await page.screenshot({ path: savedPath });
+      // Full-page (not just the viewport) so the shot shows everything that broke and the
+      // document-coordinate finding rects / annotation overlay line up with the capture.
+      try {
+        image = await page.screenshot({ path: savedPath, fullPage: true });
+      } catch (err) {
+        // A very tall page can exceed Chromium's max capture dimension ("Unable to capture
+        // screenshot"). Don't fail the render — cap the height and capture the top instead
+        // (findings still scan the whole DOM; only the image is truncated).
+        const message = err instanceof Error ? err.message : String(err);
+        if (!/capture screenshot|captureScreenshot|too large/i.test(message)) throw err;
+        console.error(
+          `refract: "${url}" is too tall for a single full-page capture at ${vp.name}; the image is truncated to the top ${MAX_CAPTURE_CSS}px (findings still cover the whole page).`,
+        );
+        await page.setViewportSize({ width: vp.width, height: MAX_CAPTURE_CSS });
+        image = await page.screenshot({ path: savedPath });
+      }
     }
 
     return {
@@ -284,7 +320,11 @@ async function renderOne(
 async function navigate(page: Page, url: string): Promise<void> {
   let response: Response | null;
   try {
-    response = await page.goto(url, { waitUntil: 'load', timeout: 30000 });
+    // `domcontentloaded`, NOT `load`: real sites routinely have a slow/hung subresource (ad,
+    // tracker, font, beacon) that never fires `load` — waiting for it times out the whole render
+    // (e.g. cnn.com). The DOM is what we measure; smartWaits (best-effort networkidle, fonts,
+    // layout settle) then decides readiness, so a single hung resource degrades instead of failing.
+    response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     if (message.includes('ERR_NAME_NOT_RESOLVED')) {
@@ -293,12 +333,23 @@ async function navigate(page: Page, url: string): Promise<void> {
     if (message.includes('ERR_CONNECTION_REFUSED')) {
       throw new Error(`Connection refused for "${url}". Is the dev server running on that port?`);
     }
+    if (message.includes('Download is starting')) {
+      throw new Error(
+        `"${url}" downloads a file (PDF, zip, …) rather than serving a web page — Refract renders pages, not downloads.`,
+      );
+    }
+    if (message.includes('ERR_ABORTED')) {
+      throw new Error(
+        `"${url}" returned no page content to render (e.g. an HTTP 204, or a response the browser didn't render).`,
+      );
+    }
     if (message.includes('Timeout') || message.includes('timeout')) {
       throw new Error(
         `Navigation to "${url}" timed out after 30s. Is the server slow or stuck loading?`,
       );
     }
-    throw new Error(`Failed to load "${url}": ${message}`);
+    // Strip Playwright's multi-line "Call log:" tail — keep the teaching part on one line.
+    throw new Error(`Failed to load "${url}": ${message.split(/\n\s*Call log:/)[0]}`);
   }
 
   if (response && response.status() >= 400) {
@@ -307,6 +358,11 @@ async function navigate(page: Page, url: string): Promise<void> {
     if (code >= 500) {
       throw new Error(
         `"${url}" returned HTTP ${status} — the server errored. Check its logs and that it's healthy.`,
+      );
+    }
+    if (code === 401 || code === 403) {
+      throw new Error(
+        `"${url}" returned HTTP ${status} — access denied. The site may require auth or block automated requests (try storageState, or a different URL).`,
       );
     }
     throw new Error(
@@ -330,7 +386,15 @@ async function smartWaits(page: Page, opts: WaitOpts): Promise<void> {
   await page
     .waitForLoadState('networkidle', { timeout: opts.networkIdleMs ?? 10000 })
     .catch(() => {});
-  await page.evaluate(() => document.fonts.ready);
+  // document.fonts.ready can hang forever while a subresource is still pending (a stalled
+  // image/tracker), so race it against a cap — fonts are usually ready by here anyway.
+  await page.evaluate(
+    () =>
+      Promise.race([
+        document.fonts.ready,
+        new Promise((resolve) => setTimeout(resolve, 5000)),
+      ]) as Promise<unknown>,
+  );
   await settleLayout(page);
 
   if (opts.waitFor) {
@@ -393,10 +457,34 @@ async function applyFreeze(page: Page): Promise<void> {
     content:
       '*,*::before,*::after{animation-duration:0s!important;animation-delay:0s!important;transition-duration:0s!important;transition-delay:0s!important;}',
   });
-  await page.evaluate(() => {
-    for (const img of document.querySelectorAll('img[loading="lazy"]'))
-      (img as HTMLImageElement).loading = 'eager';
+  await page.evaluate(async () => {
+    const imgs = Array.from(document.querySelectorAll('img'));
+    for (const img of imgs) if (img.loading === 'lazy') img.loading = 'eager';
+    // Now that they're eager, await the loads (bounded) so a full-page capture doesn't catch a
+    // below-the-fold lazy image blank/mid-load — that would make repeat renders non-deterministic.
+    await Promise.race([
+      Promise.all(imgs.map((img) => img.decode().catch(() => {}))),
+      new Promise((resolve) => setTimeout(resolve, 5000)),
+    ]);
   });
+}
+
+/**
+ * Scroll through the page once to trigger IntersectionObserver/lazy content below the fold,
+ * then return to the top. Bounded by the page's height *at the start* so an infinite-scroll
+ * page that grows as you scroll can't loop unboundedly.
+ */
+async function prefetchLazy(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    const total = document.body.scrollHeight;
+    for (let y = 0; y < total; y += window.innerHeight) {
+      window.scrollTo(0, y);
+      await new Promise(requestAnimationFrame);
+    }
+    window.scrollTo(0, 0);
+  });
+  // Brief, best-effort settle for the loads we just triggered (swallowed like the main wait).
+  await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
 }
 
 /**

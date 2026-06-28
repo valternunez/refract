@@ -5,6 +5,76 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- **A hung subresource no longer fails the whole render.** Real sites constantly have a slow/stalled
+  ad, tracker, font, or image; waiting for `load` (and `document.fonts.ready`, and `page.screenshot`)
+  could time out the entire render (e.g. **cnn.com**). Now we navigate on `domcontentloaded`, cap the
+  fonts wait, and `window.stop()` lingering requests before capture — so we screenshot what loaded
+  instead of failing.
+- **Very tall pages no longer crash the capture.** A page that exceeds Chromium's max screenshot size
+  used to throw a raw protocol error; it now falls back to a height-capped image (findings still cover
+  the whole page).
+- **sr-only text hidden via `clip` / `clip-path:inset(50%)` / `text-indent:-9999px`** no longer
+  false-fires `horizontal_overflow` / `element_clipped` / `text_overflow` (these keep a full-size box, so
+  the earlier 1px-floor missed them — Tailwind/Bootstrap visually-hidden hit this).
+- **Horizontal scroll caused by a long unbreakable token/URL is now flagged.** Previously
+  `horizontal_overflow` required an element poking past the edge; text overflowing a viewport-width
+  container (a long URL/hash) made the page scroll with no finding.
+- **`tap_target_small` now covers native checkboxes and radio buttons** (`input[type=checkbox|radio]`) —
+  ~13px controls that are exactly the tiny tap target the check exists for.
+- **`--freeze` / `--inject-css` no longer crash on CSP-strict sites.** A strict `style-src` Content
+  Security Policy used to block our injected QA styles and throw; the render context now sets
+  `bypassCSP` (we only inject our own styles), so pages like mastodon.social render.
+- **Visually-hidden "sr-only" elements no longer create noise.** A 1px screen-reader-only heading
+  (`width:1px;overflow:hidden`) was firing `text_overflow`, and a 1px skip link fired `tap_target_small`.
+  A small-size floor in the visibility check drops both — on real sites this removed the entire
+  `text_overflow` flood (e.g. airbnb/reddit 20+ → 0).
+- **HTTP 401/403 teaches correctly.** Instead of "the page isn't there", a 401/403 now says access is
+  denied and suggests `storageState` or a different URL (bot-blocked sites like etsy).
+- **Load-failure errors are one line.** The generic "Failed to load" message strips Playwright's
+  multi-line `Call log:` dump.
+- **`image_no_alt` on a src-less (lazy/unloaded) image** now reads `(no src — unloaded/lazy image)`
+  instead of an empty detail.
+- **`tap_target_small` is far less noisy.** It now flags an interactive element only when it is small in
+  **both** dimensions (a wide-but-short link like 354×40 is comfortably tappable, so it's no longer
+  flagged), and it exempts **inline text links** flowing in a sentence (per the WCAG 2.5.8 inline
+  exception). On real sites this cut the flood from ~90–99% of all controls down to the genuinely tiny
+  ones (icon buttons, tiny vote arrows). Icon/image links are unchanged — their real (image) tap area is
+  still measured.
+- **Full-page screenshots (were viewport-only).** A render now captures the whole page, not just the
+  first viewport fold — so the image shows what broke below the fold, and the document-coordinate
+  finding `rect`s and the `--annotate` overlay line up with the capture. (The README/MCP/JSDoc already
+  documented full-page; the screenshot call had regressed to viewport-only.) MCP previews are bounded to
+  an 800×2400 box so a long page doesn't blow the agent's context; the full-res PNG on disk stays full.
+- **`tap_target_small` no longer false-fires on icon/image links.** An inline `<a>` wrapping an image was
+  measured by its line-box height (e.g. 120×21 around a 120×120 image); tap size is now the union of the
+  control and its replaced children (`img`/`svg`/`picture`/`canvas`/`video`). Genuinely small controls
+  still fire.
+- **CSS containment respected.** A child clipped by `contain: paint | strict | content` is no longer a
+  false `element_clipped` / `horizontal_overflow`.
+- **Near-zero opacity ignored.** An effectively-invisible element (e.g. `opacity:0.001`) no longer trips
+  `text_too_small`.
+- **`--viewports <number>` teaches instead of crashing.** `--viewports 1280` (or hex like `0x0`) used to
+  throw `flags.viewports.split is not a function`; it now reaches the unknown-viewport teaching error.
+- **Dash-prefixed flag values don't dump a stack.** `--concurrency -1` / `--dpr -1` print a clean
+  `refract:` message instead of a raw `CACError` (use `--concurrency=-1` to hit the positive-number hint).
+- **A no-match `--selector` fails in ~10s instead of 30s**, with the same teaching message.
+
+### Changed
+- **Clearer errors and wording.** Teaching messages for a file-download URL (PDF/zip) and an empty
+  response (HTTP 204); the `element_clipped` finding and the MCP description now say an element *extends
+  past* the viewport edge (it had read ambiguously as "is clipped").
+- **Findings now cover open Shadow DOM.** The scan descends into open shadow roots, so web components
+  (design systems, etc.) are checked. Closed shadow roots remain unreachable.
+- **RTL pages: left-side horizontal overflow is detected.** On `dir="rtl"` documents, overflow past the
+  *left* edge is flagged (LTR pages are unchanged).
+- **`viewport_meta_missing` also fires when the meta lacks `width=device-width`** (a fixed-width viewport
+  defeats responsive layout the same way a missing tag does).
+- **`text_too_small` skips `aria-hidden` (decorative) subtrees.**
+- **Saved paths use forward slashes** (portable when echoed into JSON / read by other tools).
+- **Default (non-`freeze`) full-page renders scroll through once** to trigger lazy/below-the-fold content
+  before capture (bounded; the `freeze` path already forces eager loads).
+
 ### Added
 - **Annotated screenshots (`--annotate` / `annotate`).** Draw outline boxes over each finding
   (using its `rect`) onto the screenshot — errors red, warnings amber — so the image itself

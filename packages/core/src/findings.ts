@@ -72,18 +72,33 @@ function runChecks({ isMobile }: { isMobile: boolean }): Finding[] {
   };
   const visible = (el: Element): boolean => {
     const r = el.getBoundingClientRect();
-    if (r.width <= 0 || r.height <= 0) return false;
+    // ≤4px in either axis is a visually-hidden "sr-only" element (width:1px;overflow:hidden), a
+    // clipped accessibility heading, or a tracking pixel — not something a user sees. Excluding
+    // them here kills the text_overflow flood those hidden headings caused on real sites.
+    if (r.width <= 4 || r.height <= 4) return false;
     const s = getComputedStyle(el);
-    return s.visibility !== 'hidden' && s.opacity !== '0';
+    // Other visually-hidden patterns that keep a FULL-size box (so the ≤4px floor misses them):
+    // the classic `clip:rect(0,0,0,0)`, a ≥50% `clip-path:inset()` collapse (Tailwind/Bootstrap
+    // .sr-only / .visually-hidden), and the `text-indent:-9999px` image-replacement trick.
+    if (s.clip === 'rect(0px, 0px, 0px, 0px)') return false;
+    if (s.clipPath.startsWith('inset(') && /\b(?:[5-9]\d|1\d\d)(?:\.\d+)?%/.test(s.clipPath))
+      return false;
+    if (Number.parseFloat(s.textIndent) <= -9999) return false;
+    // Near-zero opacity is effectively invisible (e.g. an element mid fade-in) — don't flag it.
+    return s.visibility !== 'hidden' && Number(s.opacity) > 0.01;
   };
   // True if any ancestor clips/scrolls horizontally — such an element overflowing
-  // its own container doesn't break the page (carousels, overflow:auto scrollers).
+  // its own container doesn't break the page (carousels, overflow:auto scrollers,
+  // and CSS containment that clips paint).
   const inClipContainer = (el: Element): boolean => {
     let p = el.parentElement;
     while (p && p !== document.documentElement) {
       const s = getComputedStyle(p);
       const ox = s.overflowX === 'visible' ? s.overflow : s.overflowX;
       if (ox === 'hidden' || ox === 'clip' || ox === 'auto' || ox === 'scroll') return true;
+      // `contain: paint | strict | content` clips overflow to the box, like overflow:clip.
+      const c = s.contain;
+      if (c.includes('paint') || c.includes('strict') || c.includes('content')) return true;
       p = p.parentElement;
     }
     return false;
@@ -102,31 +117,55 @@ function runChecks({ isMobile }: { isMobile: boolean }): Finding[] {
   };
 
   const de = document.documentElement;
-  const all = Array.from(document.body.querySelectorAll('*'));
+  // Walk the light DOM and descend into open shadow roots, so findings cover web components
+  // (design systems, reddit, etc.). Closed shadow roots are unreachable by design. cssPath for a
+  // shadow-internal element is best-effort (it walks light-DOM parents and stops at the host, so the
+  // selector won't resolve from document) — the document-absolute `rect` still localizes it exactly.
+  const deepAll = (root: ParentNode): Element[] =>
+    Array.from(root.querySelectorAll('*')).flatMap((el) =>
+      el.shadowRoot ? [el, ...deepAll(el.shadowRoot)] : [el],
+    );
+  const all = deepAll(document.body);
 
-  // Real, visible, rightward overflow offenders not contained by a clip/scroll
-  // ancestor. Computed first because both the page-level and per-element checks
-  // need them — a wide visibility:hidden element must not trip either check.
+  // In RTL (Arabic/Hebrew) the page can overflow past the LEFT edge; only consider that when the
+  // document is actually RTL, so the LTR offscreen-left skip-link guard is untouched.
+  const rtl = getComputedStyle(de).direction === 'rtl';
+  // How far an element spills past the nearer viewport edge (right for LTR overflow, left for RTL).
+  const spill = (el: Element): number => {
+    const r = el.getBoundingClientRect();
+    return Math.max(r.right - vw, rtl ? -r.left : 0);
+  };
+
+  // Real, visible overflow offenders not contained by a clip/scroll ancestor. Computed first
+  // because both the page-level and per-element checks need them — a wide visibility:hidden (or
+  // sr-only) element must not trip either check.
   const offenders = all.filter((el) => {
     if (!visible(el)) return false;
-    const r = el.getBoundingClientRect();
-    if (r.right <= vw + 1) return false;
+    if (spill(el) <= 1) return false;
     return !inClipContainer(el);
   });
-
-  // 1. Page-level horizontal overflow — only with a genuine visible culprit, and name
-  //    the worst offender (furthest past the edge) so an agent knows what to fix.
-  if (de.scrollWidth > vw && offenders.length > 0) {
-    const culprit = offenders.reduce((a, b) =>
-      b.getBoundingClientRect().right > a.getBoundingClientRect().right ? b : a,
-    );
-    findings.push({
-      type: 'horizontal_overflow',
-      severity: 'error',
-      detail: `scrollWidth=${de.scrollWidth} viewport=${vw}`,
-      selector: cssPath(culprit),
-      rect: rectOf(culprit),
-    });
+  // 1. Page-level horizontal overflow — the page genuinely scrolls AND there's a real visible
+  //    culprit. Prefer an element poking past the edge; otherwise (a long unbreakable URL/token
+  //    overflowing its viewport-width box, no element offender) name the deepest content-overflower.
+  if (de.scrollWidth > vw) {
+    let culprit: Element | undefined;
+    if (offenders.length) {
+      culprit = offenders.reduce((a, b) => (spill(b) > spill(a) ? b : a));
+    } else {
+      const overflowers = all.filter(
+        (el) => visible(el) && el.scrollWidth > el.clientWidth + 1 && !inClipContainer(el),
+      );
+      culprit = overflowers[overflowers.length - 1];
+    }
+    if (culprit) {
+      findings.push({
+        type: 'horizontal_overflow',
+        severity: 'error',
+        detail: `scrollWidth=${de.scrollWidth} viewport=${vw}`,
+        selector: cssPath(culprit),
+        rect: rectOf(culprit),
+      });
+    }
   }
 
   // 2. Elements sticking out past the viewport — outermost offenders only.
@@ -143,10 +182,15 @@ function runChecks({ isMobile }: { isMobile: boolean }): Finding[] {
     'element_clipped',
     outermost.map((el) => {
       const r = el.getBoundingClientRect();
+      // Report the edge it actually spills past (left for an RTL overflow, right otherwise).
+      const detail =
+        rtl && -r.left > r.right - vw
+          ? `left=${Math.round(r.left)} viewport=${vw}`
+          : `right=${Math.round(r.right)} viewport=${vw}`;
       return {
         type: 'element_clipped' as const,
         severity: 'warn' as const,
-        detail: `right=${Math.round(r.right)} viewport=${vw}`,
+        detail,
         selector: cssPath(el),
         rect: rectOf(el),
       };
@@ -178,36 +222,69 @@ function runChecks({ isMobile }: { isMobile: boolean }): Finding[] {
     })),
   );
 
-  // 4. Tap targets under 44×44 — mobile only.
+  // 4. Tap targets genuinely small in BOTH dimensions — mobile only. (A wide-but-short link,
+  //    e.g. 354×40, is comfortably tappable; inline text links are WCAG-exempt — see below.)
   if (isMobile) {
-    const interactive = Array.from(
-      document.body.querySelectorAll(
-        'a, button, input[type="button"], input[type="submit"], [role="button"], select',
+    const interactive = all.filter((el) =>
+      el.matches(
+        'a, button, input[type="button"], input[type="submit"], input[type="checkbox"], input[type="radio"], [role="button"], select',
       ),
     );
-    const small = interactive.filter((el) => {
-      const r = el.getBoundingClientRect();
-      return r.width > 0 && r.height > 0 && (r.width < 44 || r.height < 44);
-    });
+    // Effective tap area = the control's own box unioned with any (visible) replaced children, plus
+    // whether it has one. An inline <a> wrapping an icon/logo/image measures its line-box height
+    // (e.g. 120×21 around a 120×120 image), not the image you actually tap — union fixes that.
+    const hitBox = (el: Element) => {
+      let { left, top, right, bottom } = el.getBoundingClientRect();
+      let replaced = false;
+      for (const c of el.querySelectorAll('img,svg,picture,canvas,video')) {
+        const r = c.getBoundingClientRect();
+        if (r.width <= 0 || r.height <= 0) continue;
+        replaced = true;
+        left = Math.min(left, r.left);
+        top = Math.min(top, r.top);
+        right = Math.max(right, r.right);
+        bottom = Math.max(bottom, r.bottom);
+      }
+      const rect: NonNullable<Finding['rect']> = {
+        x: Math.round(left + sx),
+        y: Math.round(top + sy),
+        width: Math.round(right - left),
+        height: Math.round(bottom - top),
+      };
+      return { rect, replaced };
+    };
     addCapped(
       'tap_target_small',
-      small.map((el) => {
-        const r = el.getBoundingClientRect();
-        return {
+      interactive
+        .map((el) => ({ el, ...hitBox(el) }))
+        .filter(({ el, rect, replaced }) => {
+          // Single source of truth for "real, on-screen element": drops hidden skip links /
+          // tracking pixels (≤4px), clip/clip-path/text-indent sr-only, and zero-opacity controls.
+          if (!visible(el)) return false;
+          // WCAG 2.5.8 inline exception: a link flowing in a sentence is constrained by the
+          // line-height of its text, not a tap-target failure. An inline link wrapping an
+          // icon/image is NOT exempt — its hitBox already reflects the real (image) tap area.
+          if (!replaced && getComputedStyle(el).display === 'inline') return false;
+          // Small in BOTH dimensions. A wide-but-short link (354×40) is tappable; only a
+          // genuinely tiny target is flagged. (A rare thin/skinny control may slip through.)
+          return rect.width < 44 && rect.height < 44;
+        })
+        .map(({ el, rect }) => ({
           type: 'tap_target_small' as const,
           severity: 'warn' as const,
           detail: 'below 44x44 minimum',
           selector: cssPath(el),
-          size: `${Math.round(r.width)}x${Math.round(r.height)}`,
-          rect: rectOf(el),
-        };
-      }),
+          size: `${rect.width}x${rect.height}`,
+          rect,
+        })),
     );
 
     // 5. Text too small to read comfortably on a phone — mobile only. Gated on a real
     //    sentence (≥12 chars) so legitimately-small short labels/badges/headers don't trip it.
     const tiny = all.filter((el) => {
       if (!visible(el)) return false;
+      // Tiny text inside an aria-hidden (decorative) subtree isn't content worth flagging.
+      if (el.closest('[aria-hidden="true"]')) return false;
       const px = Number.parseFloat(getComputedStyle(el).fontSize);
       if (!(px < 12)) return false;
       const text = Array.from(el.childNodes)
@@ -228,31 +305,44 @@ function runChecks({ isMobile }: { isMobile: boolean }): Finding[] {
       })),
     );
 
-    // 6. No <meta name="viewport"> — a mobile browser renders at a desktop width and
-    //    scales the whole page down. Page-level; reported on mobile where it bites.
-    if (!document.querySelector('meta[name="viewport"]')) {
+    // 6. A viewport meta that's missing OR doesn't set width=device-width — either way a mobile
+    //    browser renders at a fixed/desktop width and scales the page down. Reported on mobile.
+    const vpMeta = document.querySelector('meta[name="viewport"]');
+    const vpContent = vpMeta?.getAttribute('content') ?? '';
+    if (!vpMeta) {
       findings.push({
         type: 'viewport_meta_missing',
         severity: 'error',
         detail:
           'no <meta name="viewport"> — mobile browsers render at a desktop width and scale down',
       });
+    } else if (!/width\s*=\s*device-width/i.test(vpContent)) {
+      findings.push({
+        type: 'viewport_meta_missing',
+        severity: 'error',
+        detail: `<meta name="viewport"> doesn't set width=device-width (content="${vpContent.slice(0, 60)}") — mobile renders at a fixed/desktop width`,
+      });
     }
   }
 
   // 7. Images missing alt (empty alt="" is valid/decorative — not flagged).
-  const noalt = Array.from(document.body.querySelectorAll('img')).filter(
-    (img) => !img.hasAttribute('alt'),
+  const noalt = all.filter(
+    (el): el is HTMLImageElement => el.tagName === 'IMG' && !el.hasAttribute('alt'),
   );
   addCapped(
     'image_no_alt',
     noalt.map((img) => {
       // For a real URL the src locates the image; a data: URI is just noise (the selector already does).
       const src = img.getAttribute('src') || '';
+      const detail = !src
+        ? '(no src — unloaded/lazy image)'
+        : src.startsWith('data:')
+          ? 'inline data-URI image'
+          : src.slice(0, 80);
       return {
         type: 'image_no_alt' as const,
         severity: 'warn' as const,
-        detail: src.startsWith('data:') ? 'inline data-URI image' : src.slice(0, 80),
+        detail,
         selector: cssPath(img),
         rect: rectOf(img),
       };

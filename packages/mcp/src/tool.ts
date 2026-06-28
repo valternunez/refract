@@ -25,7 +25,7 @@ Example:
   → renders at mobile, tablet, and desktop; returns a downscaled preview image per
     viewport plus the absolute path to the full-resolution PNG saved on disk.
 
-It also returns structured findings per viewport — horizontal overflow (naming the element that causes it), elements clipped past the viewport, clipped or truncated text, tap targets under 44×44 on mobile, body text under 12px on mobile, a missing viewport meta tag, and images missing alt — so you can act on issues without eyeballing pixels. A finding looks like { type: "horizontal_overflow", severity: "error", detail: "scrollWidth=420 viewport=375", selector: "div.card", rect: { x: 0, y: 120, width: 420, height: 80 } }. The rect is the culprit's box in document pixels, so you can zoom straight to what broke.
+It also returns structured findings per viewport — horizontal overflow (the page scrolls sideways; names the culprit element), elements extending past the viewport edge, clipped or truncated text, tap targets under 44×44 on mobile, body text under 12px on mobile, a missing viewport meta tag, and images missing alt — so you can act on issues without eyeballing pixels. A finding looks like { type: "horizontal_overflow", severity: "error", detail: "scrollWidth=420 viewport=375", selector: "div.card", rect: { x: 0, y: 120, width: 420, height: 80 } }. The rect is the culprit's box in document pixels, so you can zoom straight to what broke.
 
 You can narrow viewports (render_responsive({ url, viewports: ["iphone-15", "1440x900"] }))
 and clip to one element (render_responsive({ url, selector: ".hero" })). Pass annotate: true to
@@ -54,7 +54,12 @@ export const renderResponsiveSchema = {
     .optional()
     .describe('Preset names or WxH. Defaults to mobile, tablet, desktop.'),
   selector: z.string().optional().describe('CSS selector to clip the screenshot to one element.'),
-  freeze: z.boolean().optional().describe('Disable animations and force eager image loading.'),
+  freeze: z
+    .boolean()
+    .optional()
+    .describe(
+      'Disable CSS animations/transitions and eager-load images for deterministic shots (does not stop canvas/video/JS-driven animation).',
+    ),
   annotate: z
     .boolean()
     .optional()
@@ -94,20 +99,31 @@ export const renderResponsiveSchema = {
 
 type RenderResponsiveArgs = z.infer<z.ZodObject<typeof renderResponsiveSchema>>;
 
-/** Agent previews are capped at this width; the full-res PNG still lands on disk. */
+/** Agent previews are bounded to this box; the full-res PNG still lands on disk. */
 const MAX_PREVIEW_WIDTH = 800;
+/** Full-page captures of long pages can be very tall — cap the preview height too. */
+const MAX_PREVIEW_HEIGHT = 2400;
 
 /**
- * Downscale a PNG to at most {@link MAX_PREVIEW_WIDTH} wide so it doesn't blow the
- * agent's context window. Narrower images are returned untouched.
+ * Downscale a PNG to fit within {@link MAX_PREVIEW_WIDTH}×{@link MAX_PREVIEW_HEIGHT} so it
+ * doesn't blow the agent's context window (full-page shots can be very tall). Images already
+ * within the box are returned untouched.
  */
 export async function downscalePreview(png: Buffer): Promise<Buffer> {
   // One sharp instance for both the header read and the resize, so the buffer is
-  // parsed once. Narrow images are returned untouched (no re-encode).
+  // parsed once. Images already within the box are returned untouched (no re-encode).
   const image = sharp(png);
-  const { width } = await image.metadata();
-  if (!width || width <= MAX_PREVIEW_WIDTH) return png;
-  return image.resize({ width: MAX_PREVIEW_WIDTH }).png().toBuffer();
+  const { width = 0, height = 0 } = await image.metadata();
+  if (width <= MAX_PREVIEW_WIDTH && height <= MAX_PREVIEW_HEIGHT) return png;
+  return image
+    .resize({
+      width: MAX_PREVIEW_WIDTH,
+      height: MAX_PREVIEW_HEIGHT,
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
+    .png()
+    .toBuffer();
 }
 
 /**

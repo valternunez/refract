@@ -74,7 +74,10 @@ function addRenderFlags(cmd: Command): Command {
     .option('--wait-for <css>', 'Wait for this selector before capturing')
     .option('--wait-for-function <js>', 'Wait until this JS expression is truthy before capturing')
     .option('--wait-for-network-idle-ms <n>', 'Cap (ms) for the network-idle wait')
-    .option('--freeze', 'Disable animations and force eager image loading')
+    .option(
+      '--freeze',
+      'Disable CSS animations/transitions and eager-load images (not canvas/video/JS)',
+    )
     .option('--inject-css <css>', 'Inject CSS before capture (e.g. hide flaky elements)')
     .option('--dpr <n>', 'Override device scale factor (e.g. 1 for smaller files)')
     .option('--concurrency <n>', 'Max viewports rendered in parallel')
@@ -86,7 +89,9 @@ function addRenderFlags(cmd: Command): Command {
 function renderOptions(url: string, flags: Flags): RenderOptions {
   return {
     url,
-    viewports: flags.viewports
+    // String(): cac coerces a numeric-looking value (e.g. `--viewports 1280`, or hex `0x0`)
+    // to a number, which would crash `.split`. Stringify so it reaches the teaching error.
+    viewports: String(flags.viewports)
       .split(',')
       .map((v) => v.trim())
       .filter(Boolean),
@@ -201,4 +206,12 @@ addRenderFlags(cli.command('diff <url>', 'Compare a render against a baseline'))
 
 cli.help();
 cli.version('0.0.0');
-cli.parse();
+try {
+  // cac throws on a parse error (e.g. `--concurrency -1`, where it reads `-1` as an unknown
+  // option). Catch it so the user gets a clean message, not a raw stack. Tip: `--concurrency=-1`
+  // routes the value to our positive-number validator instead.
+  cli.parse();
+} catch (err) {
+  console.error(`refract: ${err instanceof Error ? err.message : String(err)}`);
+  process.exitCode = 1;
+}
