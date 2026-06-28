@@ -151,8 +151,8 @@ can zoom straight to what broke); `horizontal_overflow` names the element that c
 
 | type | severity | fires when |
 |---|---|---|
-| `horizontal_overflow` | error | the page scrolls wider than the viewport (names the culprit element; on `dir="rtl"` pages, left-side overflow too) |
-| `element_clipped` | warn | an element sticks out past the viewport edge |
+| `horizontal_overflow` | error | the page scrolls wider than the viewport — from a wide element OR overflowing text (a long unbreakable URL/token); names the culprit, plus left-side overflow on `dir="rtl"`. Also surfaces `element_clipped` for the offending element |
+| `element_clipped` | warn | an element **extends past** the viewport edge (would be cut off / cause sideways scroll) |
 | `text_overflow` | warn | text is hard-clipped with no ellipsis (`scrollWidth > clientWidth`; intentional `text-overflow: ellipsis` truncation is ignored) |
 | `tap_target_small` | warn | an interactive element is small in **both** dimensions (under 44px) on mobile — wide-but-short links and inline text links are exempt |
 | `text_too_small` | warn | body text under 12px on a mobile viewport (short labels/badges and `aria-hidden` subtrees are ignored) |

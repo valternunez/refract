@@ -25,7 +25,7 @@ Example:
   → renders at mobile, tablet, and desktop; returns a downscaled preview image per
     viewport plus the absolute path to the full-resolution PNG saved on disk.
 
-It also returns structured findings per viewport — horizontal overflow (naming the element that causes it), elements clipped past the viewport, clipped or truncated text, tap targets under 44×44 on mobile, body text under 12px on mobile, a missing viewport meta tag, and images missing alt — so you can act on issues without eyeballing pixels. A finding looks like { type: "horizontal_overflow", severity: "error", detail: "scrollWidth=420 viewport=375", selector: "div.card", rect: { x: 0, y: 120, width: 420, height: 80 } }. The rect is the culprit's box in document pixels, so you can zoom straight to what broke.
+It also returns structured findings per viewport — horizontal overflow (the page scrolls sideways; names the culprit element), elements extending past the viewport edge, clipped or truncated text, tap targets under 44×44 on mobile, body text under 12px on mobile, a missing viewport meta tag, and images missing alt — so you can act on issues without eyeballing pixels. A finding looks like { type: "horizontal_overflow", severity: "error", detail: "scrollWidth=420 viewport=375", selector: "div.card", rect: { x: 0, y: 120, width: 420, height: 80 } }. The rect is the culprit's box in document pixels, so you can zoom straight to what broke.
 
 You can narrow viewports (render_responsive({ url, viewports: ["iphone-15", "1440x900"] }))
 and clip to one element (render_responsive({ url, selector: ".hero" })). Pass annotate: true to

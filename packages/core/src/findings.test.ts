@@ -395,6 +395,46 @@ describe('collectFindings false positives', () => {
     }
   });
 
+  it('does not flag sr-only text hidden via clip-path / text-indent (full-size box)', async () => {
+    const cp = await findingsFor(
+      '<h1 style="position:absolute;clip-path:inset(50%);white-space:nowrap">a long screen-reader-only heading hidden by clip-path</h1>',
+    );
+    try {
+      expect(cp.findings.find((f) => f.type === 'horizontal_overflow')).toBeUndefined();
+      expect(cp.findings.find((f) => f.type === 'element_clipped')).toBeUndefined();
+    } finally {
+      await cp.context.close();
+    }
+    const ti = await findingsFor(
+      '<a href="#" style="display:block;text-indent:-9999px;overflow:hidden;white-space:nowrap">skip to main content</a>',
+    );
+    try {
+      expect(ti.findings.find((f) => f.type === 'text_overflow')).toBeUndefined();
+    } finally {
+      await ti.context.close();
+    }
+  });
+
+  it('flags horizontal scroll caused by an unbreakable token (no element offender)', async () => {
+    const { findings, context } = await findingsFor(
+      '<div style="white-space:nowrap;font-size:20px">https://example.com/a-very-long-unbreakable-token-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</div>',
+    );
+    try {
+      expect(findings.find((f) => f.type === 'horizontal_overflow')).toBeDefined();
+    } finally {
+      await context.close();
+    }
+  });
+
+  it('flags a tiny native checkbox as a small tap target', async () => {
+    const { findings, context } = await findingsFor('<input type="checkbox"> <label>agree</label>');
+    try {
+      expect(findings.find((f) => f.type === 'tap_target_small')).toBeDefined();
+    } finally {
+      await context.close();
+    }
+  });
+
   it('does not flag tiny text inside an aria-hidden subtree', async () => {
     const { findings, context } = await findingsFor(
       '<div aria-hidden="true"><span style="font-size:9px">a full sentence of decorative copy</span></div>',

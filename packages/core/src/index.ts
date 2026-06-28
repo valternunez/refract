@@ -216,6 +216,12 @@ interface RenderOneOpts {
   storageState?: string;
 }
 
+/**
+ * Full-page capture height cap (CSS px). A page taller than this can exceed Chromium's max
+ * screenshot dimension and fail; we truncate the image to the top instead. ×dpr stays under the limit.
+ */
+const MAX_CAPTURE_CSS = 8000;
+
 /** Render a single viewport in its own context, always closing the context. */
 async function renderOne(
   browser: Browser,
@@ -248,6 +254,10 @@ async function renderOne(
     // already forces eager + awaits decode, so it skips this. Bounded by the INITIAL height so
     // infinite-scroll pages can't grow unbounded.
     if (!opts.selector && !opts.freeze) await prefetchLazy(page);
+    // Abort any still-pending requests (a stalled image/tracker). We've already waited for the
+    // page; a lingering request otherwise blocks page.screenshot indefinitely (it waits for the
+    // page to be stable). Like a human hitting the browser's stop button — capture what loaded.
+    await page.evaluate(() => window.stop()).catch(() => {});
 
     // Findings are collected before the screenshot so `annotate` can draw their boxes
     // into the capture. Findings read document-absolute geometry, so capturing after is fine.
@@ -276,7 +286,20 @@ async function renderOne(
     } else {
       // Full-page (not just the viewport) so the shot shows everything that broke and the
       // document-coordinate finding rects / annotation overlay line up with the capture.
-      image = await page.screenshot({ path: savedPath, fullPage: true });
+      try {
+        image = await page.screenshot({ path: savedPath, fullPage: true });
+      } catch (err) {
+        // A very tall page can exceed Chromium's max capture dimension ("Unable to capture
+        // screenshot"). Don't fail the render — cap the height and capture the top instead
+        // (findings still scan the whole DOM; only the image is truncated).
+        const message = err instanceof Error ? err.message : String(err);
+        if (!/capture screenshot|captureScreenshot|too large/i.test(message)) throw err;
+        console.error(
+          `refract: "${url}" is too tall for a single full-page capture at ${vp.name}; the image is truncated to the top ${MAX_CAPTURE_CSS}px (findings still cover the whole page).`,
+        );
+        await page.setViewportSize({ width: vp.width, height: MAX_CAPTURE_CSS });
+        image = await page.screenshot({ path: savedPath });
+      }
     }
 
     return {
@@ -297,7 +320,11 @@ async function renderOne(
 async function navigate(page: Page, url: string): Promise<void> {
   let response: Response | null;
   try {
-    response = await page.goto(url, { waitUntil: 'load', timeout: 30000 });
+    // `domcontentloaded`, NOT `load`: real sites routinely have a slow/hung subresource (ad,
+    // tracker, font, beacon) that never fires `load` — waiting for it times out the whole render
+    // (e.g. cnn.com). The DOM is what we measure; smartWaits (best-effort networkidle, fonts,
+    // layout settle) then decides readiness, so a single hung resource degrades instead of failing.
+    response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     if (message.includes('ERR_NAME_NOT_RESOLVED')) {
@@ -305,6 +332,16 @@ async function navigate(page: Page, url: string): Promise<void> {
     }
     if (message.includes('ERR_CONNECTION_REFUSED')) {
       throw new Error(`Connection refused for "${url}". Is the dev server running on that port?`);
+    }
+    if (message.includes('Download is starting')) {
+      throw new Error(
+        `"${url}" downloads a file (PDF, zip, …) rather than serving a web page — Refract renders pages, not downloads.`,
+      );
+    }
+    if (message.includes('ERR_ABORTED')) {
+      throw new Error(
+        `"${url}" returned no page content to render (e.g. an HTTP 204, or a response the browser didn't render).`,
+      );
     }
     if (message.includes('Timeout') || message.includes('timeout')) {
       throw new Error(
@@ -349,7 +386,15 @@ async function smartWaits(page: Page, opts: WaitOpts): Promise<void> {
   await page
     .waitForLoadState('networkidle', { timeout: opts.networkIdleMs ?? 10000 })
     .catch(() => {});
-  await page.evaluate(() => document.fonts.ready);
+  // document.fonts.ready can hang forever while a subresource is still pending (a stalled
+  // image/tracker), so race it against a cap — fonts are usually ready by here anyway.
+  await page.evaluate(
+    () =>
+      Promise.race([
+        document.fonts.ready,
+        new Promise((resolve) => setTimeout(resolve, 5000)),
+      ]) as Promise<unknown>,
+  );
   await settleLayout(page);
 
   if (opts.waitFor) {

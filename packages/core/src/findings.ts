@@ -77,6 +77,13 @@ function runChecks({ isMobile }: { isMobile: boolean }): Finding[] {
     // them here kills the text_overflow flood those hidden headings caused on real sites.
     if (r.width <= 4 || r.height <= 4) return false;
     const s = getComputedStyle(el);
+    // Other visually-hidden patterns that keep a FULL-size box (so the ≤4px floor misses them):
+    // the classic `clip:rect(0,0,0,0)`, a ≥50% `clip-path:inset()` collapse (Tailwind/Bootstrap
+    // .sr-only / .visually-hidden), and the `text-indent:-9999px` image-replacement trick.
+    if (s.clip === 'rect(0px, 0px, 0px, 0px)') return false;
+    if (s.clipPath.startsWith('inset(') && /\b(?:[5-9]\d|1\d\d)(?:\.\d+)?%/.test(s.clipPath))
+      return false;
+    if (Number.parseFloat(s.textIndent) <= -9999) return false;
     // Near-zero opacity is effectively invisible (e.g. an element mid fade-in) — don't flag it.
     return s.visibility !== 'hidden' && Number(s.opacity) > 0.01;
   };
@@ -137,18 +144,28 @@ function runChecks({ isMobile }: { isMobile: boolean }): Finding[] {
     if (spill(el) <= 1) return false;
     return !inClipContainer(el);
   });
-
-  // 1. Page-level horizontal overflow — only with a genuine visible culprit, and name
-  //    the worst offender (furthest past the edge) so an agent knows what to fix.
-  if (de.scrollWidth > vw && offenders.length > 0) {
-    const culprit = offenders.reduce((a, b) => (spill(b) > spill(a) ? b : a));
-    findings.push({
-      type: 'horizontal_overflow',
-      severity: 'error',
-      detail: `scrollWidth=${de.scrollWidth} viewport=${vw}`,
-      selector: cssPath(culprit),
-      rect: rectOf(culprit),
-    });
+  // 1. Page-level horizontal overflow — the page genuinely scrolls AND there's a real visible
+  //    culprit. Prefer an element poking past the edge; otherwise (a long unbreakable URL/token
+  //    overflowing its viewport-width box, no element offender) name the deepest content-overflower.
+  if (de.scrollWidth > vw) {
+    let culprit: Element | undefined;
+    if (offenders.length) {
+      culprit = offenders.reduce((a, b) => (spill(b) > spill(a) ? b : a));
+    } else {
+      const overflowers = all.filter(
+        (el) => visible(el) && el.scrollWidth > el.clientWidth + 1 && !inClipContainer(el),
+      );
+      culprit = overflowers[overflowers.length - 1];
+    }
+    if (culprit) {
+      findings.push({
+        type: 'horizontal_overflow',
+        severity: 'error',
+        detail: `scrollWidth=${de.scrollWidth} viewport=${vw}`,
+        selector: cssPath(culprit),
+        rect: rectOf(culprit),
+      });
+    }
   }
 
   // 2. Elements sticking out past the viewport — outermost offenders only.
@@ -209,7 +226,9 @@ function runChecks({ isMobile }: { isMobile: boolean }): Finding[] {
   //    e.g. 354×40, is comfortably tappable; inline text links are WCAG-exempt — see below.)
   if (isMobile) {
     const interactive = all.filter((el) =>
-      el.matches('a, button, input[type="button"], input[type="submit"], [role="button"], select'),
+      el.matches(
+        'a, button, input[type="button"], input[type="submit"], input[type="checkbox"], input[type="radio"], [role="button"], select',
+      ),
     );
     // Effective tap area = the control's own box unioned with any (visible) replaced children, plus
     // whether it has one. An inline <a> wrapping an icon/logo/image measures its line-box height
@@ -239,9 +258,9 @@ function runChecks({ isMobile }: { isMobile: boolean }): Finding[] {
       interactive
         .map((el) => ({ el, ...hitBox(el) }))
         .filter(({ el, rect, replaced }) => {
-          // ≤4px is a hidden skip link / tracking pixel, not a real (mis-sized) tap target.
-          // (A genuinely visible but ≤4px-thin control would slip through — vanishingly rare.)
-          if (rect.width <= 4 || rect.height <= 4) return false;
+          // Single source of truth for "real, on-screen element": drops hidden skip links /
+          // tracking pixels (≤4px), clip/clip-path/text-indent sr-only, and zero-opacity controls.
+          if (!visible(el)) return false;
           // WCAG 2.5.8 inline exception: a link flowing in a sentence is constrained by the
           // line-height of its text, not a tap-target failure. An inline link wrapping an
           // icon/image is NOT exempt — its hitBox already reflects the real (image) tap area.

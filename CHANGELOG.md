@@ -6,6 +6,22 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
+- **A hung subresource no longer fails the whole render.** Real sites constantly have a slow/stalled
+  ad, tracker, font, or image; waiting for `load` (and `document.fonts.ready`, and `page.screenshot`)
+  could time out the entire render (e.g. **cnn.com**). Now we navigate on `domcontentloaded`, cap the
+  fonts wait, and `window.stop()` lingering requests before capture — so we screenshot what loaded
+  instead of failing.
+- **Very tall pages no longer crash the capture.** A page that exceeds Chromium's max screenshot size
+  used to throw a raw protocol error; it now falls back to a height-capped image (findings still cover
+  the whole page).
+- **sr-only text hidden via `clip` / `clip-path:inset(50%)` / `text-indent:-9999px`** no longer
+  false-fires `horizontal_overflow` / `element_clipped` / `text_overflow` (these keep a full-size box, so
+  the earlier 1px-floor missed them — Tailwind/Bootstrap visually-hidden hit this).
+- **Horizontal scroll caused by a long unbreakable token/URL is now flagged.** Previously
+  `horizontal_overflow` required an element poking past the edge; text overflowing a viewport-width
+  container (a long URL/hash) made the page scroll with no finding.
+- **`tap_target_small` now covers native checkboxes and radio buttons** (`input[type=checkbox|radio]`) —
+  ~13px controls that are exactly the tiny tap target the check exists for.
 - **`--freeze` / `--inject-css` no longer crash on CSP-strict sites.** A strict `style-src` Content
   Security Policy used to block our injected QA styles and throw; the render context now sets
   `bypassCSP` (we only inject our own styles), so pages like mastodon.social render.
@@ -45,6 +61,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **A no-match `--selector` fails in ~10s instead of 30s**, with the same teaching message.
 
 ### Changed
+- **Clearer errors and wording.** Teaching messages for a file-download URL (PDF/zip) and an empty
+  response (HTTP 204); the `element_clipped` finding and the MCP description now say an element *extends
+  past* the viewport edge (it had read ambiguously as "is clipped").
 - **Findings now cover open Shadow DOM.** The scan descends into open shadow roots, so web components
   (design systems, etc.) are checked. Closed shadow roots remain unreachable.
 - **RTL pages: left-side horizontal overflow is detected.** On `dir="rtl"` documents, overflow past the

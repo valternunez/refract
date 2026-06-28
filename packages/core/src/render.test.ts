@@ -39,6 +39,37 @@ describe('render', () => {
   );
 
   it(
+    'renders a page whose subresource never loads (does not hang)',
+    { timeout: 25000 },
+    async () => {
+      // A stalled image/tracker must not fail the whole render (real sites do this constantly).
+      const { createServer } = await import('node:http');
+      const server = createServer((req, res) => {
+        if (req.url === '/hang') return; // never responds — the image stalls forever
+        res
+          .writeHead(200, { 'content-type': 'text/html' })
+          .end(
+            '<meta name="viewport" content="width=device-width"><h1>page</h1><img src="/hang" width="50" height="50" alt="stalled">',
+          );
+      });
+      await new Promise<void>((r) => server.listen(0, r));
+      const port = (server.address() as { port: number }).port;
+      try {
+        const shots = await render({
+          url: `http://localhost:${port}/`,
+          viewports: ['400x800'],
+          out: outDir,
+          dpr: 1,
+          networkIdleMs: 1000, // shorten the best-effort wait so the test is quick
+        });
+        expect(shots).toHaveLength(1); // resolved, did not throw/hang
+      } finally {
+        await new Promise<void>((r) => server.close(() => r()));
+      }
+    },
+  );
+
+  it(
     'renders a page with a strict CSP (bypassed for our own QA styles)',
     { timeout: 30000 },
     async () => {
