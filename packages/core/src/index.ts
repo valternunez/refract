@@ -231,6 +231,9 @@ async function renderOne(
     hasTouch: vp.hasTouch,
     isMobile: vp.isMobile,
     storageState: opts.storageState,
+    // We inject our own QA CSS (freeze, injectCss); without this a strict style-src
+    // Content-Security-Policy blocks addStyleTag and the whole render throws.
+    bypassCSP: true,
   });
   try {
     const page = await context.newPage();
@@ -240,6 +243,11 @@ async function renderOne(
     // After freeze, before capture+findings: user CSS can hide flaky elements so
     // they neither show in the shot nor get flagged as findings.
     if (opts.injectCss) await page.addStyleTag({ content: opts.injectCss });
+    // Default (non-freeze) full-page path: scroll through once so IntersectionObserver/lazy
+    // content below the fold loads before the full-page capture catches it mid-load. Freeze
+    // already forces eager + awaits decode, so it skips this. Bounded by the INITIAL height so
+    // infinite-scroll pages can't grow unbounded.
+    if (!opts.selector && !opts.freeze) await prefetchLazy(page);
 
     // Findings are collected before the screenshot so `annotate` can draw their boxes
     // into the capture. Findings read document-absolute geometry, so capturing after is fine.
@@ -247,7 +255,9 @@ async function renderOne(
     // Annotation overlays the full page; it's meaningless on a single clipped element.
     if (opts.annotate && !opts.selector) await drawAnnotations(page, findings);
 
-    const savedPath = join(opts.outDir, `${vp.name}.png`);
+    // Forward slashes so the path is portable when echoed into JSON / read by other tools
+    // (Playwright writes to it fine on Windows). "Outputs are inputs" — keep them clean.
+    const savedPath = join(opts.outDir, `${vp.name}.png`).split('\\').join('/');
     let image: Buffer;
     if (opts.selector) {
       try {
@@ -301,7 +311,8 @@ async function navigate(page: Page, url: string): Promise<void> {
         `Navigation to "${url}" timed out after 30s. Is the server slow or stuck loading?`,
       );
     }
-    throw new Error(`Failed to load "${url}": ${message}`);
+    // Strip Playwright's multi-line "Call log:" tail — keep the teaching part on one line.
+    throw new Error(`Failed to load "${url}": ${message.split(/\n\s*Call log:/)[0]}`);
   }
 
   if (response && response.status() >= 400) {
@@ -310,6 +321,11 @@ async function navigate(page: Page, url: string): Promise<void> {
     if (code >= 500) {
       throw new Error(
         `"${url}" returned HTTP ${status} — the server errored. Check its logs and that it's healthy.`,
+      );
+    }
+    if (code === 401 || code === 403) {
+      throw new Error(
+        `"${url}" returned HTTP ${status} — access denied. The site may require auth or block automated requests (try storageState, or a different URL).`,
       );
     }
     throw new Error(
@@ -406,6 +422,24 @@ async function applyFreeze(page: Page): Promise<void> {
       new Promise((resolve) => setTimeout(resolve, 5000)),
     ]);
   });
+}
+
+/**
+ * Scroll through the page once to trigger IntersectionObserver/lazy content below the fold,
+ * then return to the top. Bounded by the page's height *at the start* so an infinite-scroll
+ * page that grows as you scroll can't loop unboundedly.
+ */
+async function prefetchLazy(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    const total = document.body.scrollHeight;
+    for (let y = 0; y < total; y += window.innerHeight) {
+      window.scrollTo(0, y);
+      await new Promise(requestAnimationFrame);
+    }
+    window.scrollTo(0, 0);
+  });
+  // Brief, best-effort settle for the loads we just triggered (swallowed like the main wait).
+  await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
 }
 
 /**

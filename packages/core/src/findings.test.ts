@@ -314,6 +314,98 @@ describe('collectFindings false positives', () => {
     }
   });
 
+  it('does not flag visually-hidden sr-only text as text_overflow', async () => {
+    const { findings, context } = await findingsFor(
+      '<h1 style="position:absolute;width:1px;height:1px;overflow:hidden;white-space:nowrap">a long screen-reader-only heading</h1>',
+    );
+    try {
+      expect(findings.find((f) => f.type === 'text_overflow')).toBeUndefined();
+    } finally {
+      await context.close();
+    }
+  });
+
+  it('does not flag a 1px skip link as a tap target', async () => {
+    const { findings, context } = await findingsFor(
+      '<a href="#main" style="position:absolute;width:1px;height:1px;overflow:hidden">skip to content</a>',
+    );
+    try {
+      expect(findings.find((f) => f.type === 'tap_target_small')).toBeUndefined();
+    } finally {
+      await context.close();
+    }
+  });
+
+  it('reports a helpful detail for an alt-less image with no src yet', async () => {
+    const { findings, context } = await findingsFor('<img width="40" height="40">');
+    try {
+      const noAlt = findings.find((f) => f.type === 'image_no_alt');
+      if (!noAlt) throw new Error('expected an image_no_alt finding');
+      expect(noAlt.detail).toMatch(/no src/i);
+    } finally {
+      await context.close();
+    }
+  });
+
+  it('flags a viewport meta that lacks width=device-width', async () => {
+    const bad = await findingsFor('<meta name="viewport" content="width=1024"><p>hi</p>');
+    try {
+      const f = bad.findings.find((x) => x.type === 'viewport_meta_missing');
+      if (!f) throw new Error('expected a viewport_meta_missing finding');
+      expect(f.detail).toMatch(/device-width/);
+    } finally {
+      await bad.context.close();
+    }
+    const ok = await findingsFor(
+      '<meta name="viewport" content="width=device-width, initial-scale=1"><p>hi</p>',
+    );
+    try {
+      expect(ok.findings.find((x) => x.type === 'viewport_meta_missing')).toBeUndefined();
+    } finally {
+      await ok.context.close();
+    }
+  });
+
+  it('finds overflow inside an open shadow root', async () => {
+    const { findings, context } = await findingsFor(
+      '<wide-card></wide-card><script>customElements.define("wide-card",' +
+        'class extends HTMLElement{connectedCallback(){this.attachShadow({mode:"open"})' +
+        '.innerHTML="<div style=\\"width:2000px;height:40px;background:red\\">shadow overflow</div>"}})</script>',
+    );
+    try {
+      expect(findings.find((f) => f.type === 'horizontal_overflow')).toBeDefined();
+      expect(findings.find((f) => f.type === 'element_clipped')).toBeDefined();
+    } finally {
+      await context.close();
+    }
+  });
+
+  it('flags left-side overflow on an RTL page', async () => {
+    const { findings, context } = await findingsFor(
+      '<script>document.documentElement.dir="rtl"</script>' +
+        '<div style="width:600px;height:40px;background:red">wide block in an RTL document</div>',
+    );
+    try {
+      expect(findings.find((f) => f.type === 'horizontal_overflow')).toBeDefined();
+      const clipped = findings.find((f) => f.type === 'element_clipped');
+      if (!clipped) throw new Error('expected an element_clipped finding');
+      expect(clipped.detail).toMatch(/left=/);
+    } finally {
+      await context.close();
+    }
+  });
+
+  it('does not flag tiny text inside an aria-hidden subtree', async () => {
+    const { findings, context } = await findingsFor(
+      '<div aria-hidden="true"><span style="font-size:9px">a full sentence of decorative copy</span></div>',
+    );
+    try {
+      expect(findings.find((f) => f.type === 'text_too_small')).toBeUndefined();
+    } finally {
+      await context.close();
+    }
+  });
+
   it(
     'flags a missing viewport meta on mobile, but not when present or on desktop',
     { timeout: 30000 },

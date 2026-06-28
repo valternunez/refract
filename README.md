@@ -41,6 +41,11 @@ Use `--inject-css "#clock,.ad{visibility:hidden}"` to hide dynamic or flaky elem
 before capture — handy for clean, stable diffs (and the hidden elements stop showing
 up as findings too).
 
+`--freeze` makes shots deterministic by disabling **CSS** animations/transitions and
+eager-loading images; it does **not** stop canvas, `<video>`, or JS-driven animation
+(use `--inject-css` to hide those). Captures are **full-page**, so content that only
+appears more than a few seconds after load should be gated with `--wait-for`.
+
 Pass `--annotate` to draw outline boxes over the findings onto the screenshot (errors
 red, warnings amber) — so the image itself shows what broke. Full-page only.
 
@@ -146,15 +151,16 @@ can zoom straight to what broke); `horizontal_overflow` names the element that c
 
 | type | severity | fires when |
 |---|---|---|
-| `horizontal_overflow` | error | the page scrolls wider than the viewport (names the culprit element) |
+| `horizontal_overflow` | error | the page scrolls wider than the viewport (names the culprit element; on `dir="rtl"` pages, left-side overflow too) |
 | `element_clipped` | warn | an element sticks out past the viewport edge |
 | `text_overflow` | warn | text is hard-clipped with no ellipsis (`scrollWidth > clientWidth`; intentional `text-overflow: ellipsis` truncation is ignored) |
 | `tap_target_small` | warn | an interactive element is small in **both** dimensions (under 44px) on mobile — wide-but-short links and inline text links are exempt |
-| `text_too_small` | warn | body text under 12px on a mobile viewport (short labels/badges are ignored) |
-| `viewport_meta_missing` | error | the page has no `<meta name="viewport">`, so phones render it at desktop width and scale down |
+| `text_too_small` | warn | body text under 12px on a mobile viewport (short labels/badges and `aria-hidden` subtrees are ignored) |
+| `viewport_meta_missing` | error | the page has no `<meta name="viewport">` (or it doesn't set `width=device-width`), so phones render it at a fixed/desktop width and scale down |
 | `image_no_alt` | warn | an `<img>` is missing its `alt` attribute |
 
-The CLI prints them under each shot; the MCP tool returns them as JSON keyed by preset.
+The checks descend into open Shadow DOM (web components); closed shadow roots are unreachable. The CLI
+prints findings under each shot; the MCP tool returns them as JSON keyed by preset.
 
 ### Token footprint
 

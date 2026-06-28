@@ -54,7 +54,12 @@ export const renderResponsiveSchema = {
     .optional()
     .describe('Preset names or WxH. Defaults to mobile, tablet, desktop.'),
   selector: z.string().optional().describe('CSS selector to clip the screenshot to one element.'),
-  freeze: z.boolean().optional().describe('Disable animations and force eager image loading.'),
+  freeze: z
+    .boolean()
+    .optional()
+    .describe(
+      'Disable CSS animations/transitions and eager-load images for deterministic shots (does not stop canvas/video/JS-driven animation).',
+    ),
   annotate: z
     .boolean()
     .optional()

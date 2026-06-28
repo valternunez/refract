@@ -6,6 +6,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
+- **`--freeze` / `--inject-css` no longer crash on CSP-strict sites.** A strict `style-src` Content
+  Security Policy used to block our injected QA styles and throw; the render context now sets
+  `bypassCSP` (we only inject our own styles), so pages like mastodon.social render.
+- **Visually-hidden "sr-only" elements no longer create noise.** A 1px screen-reader-only heading
+  (`width:1px;overflow:hidden`) was firing `text_overflow`, and a 1px skip link fired `tap_target_small`.
+  A small-size floor in the visibility check drops both — on real sites this removed the entire
+  `text_overflow` flood (e.g. airbnb/reddit 20+ → 0).
+- **HTTP 401/403 teaches correctly.** Instead of "the page isn't there", a 401/403 now says access is
+  denied and suggests `storageState` or a different URL (bot-blocked sites like etsy).
+- **Load-failure errors are one line.** The generic "Failed to load" message strips Playwright's
+  multi-line `Call log:` dump.
+- **`image_no_alt` on a src-less (lazy/unloaded) image** now reads `(no src — unloaded/lazy image)`
+  instead of an empty detail.
 - **`tap_target_small` is far less noisy.** It now flags an interactive element only when it is small in
   **both** dimensions (a wide-but-short link like 354×40 is comfortably tappable, so it's no longer
   flagged), and it exempts **inline text links** flowing in a sentence (per the WCAG 2.5.8 inline
@@ -30,6 +43,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Dash-prefixed flag values don't dump a stack.** `--concurrency -1` / `--dpr -1` print a clean
   `refract:` message instead of a raw `CACError` (use `--concurrency=-1` to hit the positive-number hint).
 - **A no-match `--selector` fails in ~10s instead of 30s**, with the same teaching message.
+
+### Changed
+- **Findings now cover open Shadow DOM.** The scan descends into open shadow roots, so web components
+  (design systems, etc.) are checked. Closed shadow roots remain unreachable.
+- **RTL pages: left-side horizontal overflow is detected.** On `dir="rtl"` documents, overflow past the
+  *left* edge is flagged (LTR pages are unchanged).
+- **`viewport_meta_missing` also fires when the meta lacks `width=device-width`** (a fixed-width viewport
+  defeats responsive layout the same way a missing tag does).
+- **`text_too_small` skips `aria-hidden` (decorative) subtrees.**
+- **Saved paths use forward slashes** (portable when echoed into JSON / read by other tools).
+- **Default (non-`freeze`) full-page renders scroll through once** to trigger lazy/below-the-fold content
+  before capture (bounded; the `freeze` path already forces eager loads).
 
 ### Added
 - **Annotated screenshots (`--annotate` / `annotate`).** Draw outline boxes over each finding

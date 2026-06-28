@@ -29,11 +29,34 @@ describe('render', () => {
       if (!shot) throw new Error('expected one shot');
 
       expect(shot.width).toBe(400); // logical viewport width
+      expect(shot.savedPath.includes('\\')).toBe(false); // forward-slash, portable
       const buf = await readFile(shot.savedPath);
       // PNG IHDR: width at byte 16, height at byte 20 (big-endian). Capture is full-page, so dims
       // are ≥ the viewport (the demo overflows slightly past 400 wide and is taller than 800).
       expect(buf.readUInt32BE(16)).toBeGreaterThanOrEqual(400);
       expect(buf.readUInt32BE(20)).toBeGreaterThanOrEqual(800);
+    },
+  );
+
+  it(
+    'renders a page with a strict CSP (bypassed for our own QA styles)',
+    { timeout: 30000 },
+    async () => {
+      // A style-src CSP without 'unsafe-inline' blocks addStyleTag; bypassCSP must let freeze through.
+      const csp = join(outDir, 'csp.html');
+      await writeFile(
+        csp,
+        '<!doctype html><meta http-equiv="Content-Security-Policy" content="style-src \'self\'">' +
+          '<body><h1>strict CSP</h1></body>',
+      );
+      const shots = await render({
+        url: pathToFileURL(csp).href,
+        viewports: ['400x800'],
+        out: outDir,
+        dpr: 1,
+        freeze: true,
+      });
+      expect(shots).toHaveLength(1);
     },
   );
 
