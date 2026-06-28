@@ -183,45 +183,58 @@ function runChecks({ isMobile }: { isMobile: boolean }): Finding[] {
     })),
   );
 
-  // 4. Tap targets under 44×44 — mobile only.
+  // 4. Tap targets genuinely small in BOTH dimensions — mobile only. (A wide-but-short link,
+  //    e.g. 354×40, is comfortably tappable; inline text links are WCAG-exempt — see below.)
   if (isMobile) {
     const interactive = Array.from(
       document.body.querySelectorAll(
         'a, button, input[type="button"], input[type="submit"], [role="button"], select',
       ),
     );
-    // Effective tap area = the control's own box unioned with any replaced children. An
-    // inline <a> wrapping an icon/logo/image measures its line-box height (e.g. 120×21
-    // around a 120×120 image), not the image you actually tap — union fixes that.
-    const hitBox = (el: Element): NonNullable<Finding['rect']> => {
+    // Effective tap area = the control's own box unioned with any (visible) replaced children, plus
+    // whether it has one. An inline <a> wrapping an icon/logo/image measures its line-box height
+    // (e.g. 120×21 around a 120×120 image), not the image you actually tap — union fixes that.
+    const hitBox = (el: Element) => {
       let { left, top, right, bottom } = el.getBoundingClientRect();
+      let replaced = false;
       for (const c of el.querySelectorAll('img,svg,picture,canvas,video')) {
         const r = c.getBoundingClientRect();
         if (r.width <= 0 || r.height <= 0) continue;
+        replaced = true;
         left = Math.min(left, r.left);
         top = Math.min(top, r.top);
         right = Math.max(right, r.right);
         bottom = Math.max(bottom, r.bottom);
       }
-      return {
+      const rect: NonNullable<Finding['rect']> = {
         x: Math.round(left + sx),
         y: Math.round(top + sy),
         width: Math.round(right - left),
         height: Math.round(bottom - top),
       };
+      return { rect, replaced };
     };
     addCapped(
       'tap_target_small',
       interactive
-        .map((el) => ({ el, box: hitBox(el) }))
-        .filter(({ box }) => box.width > 0 && box.height > 0 && (box.width < 44 || box.height < 44))
-        .map(({ el, box }) => ({
+        .map((el) => ({ el, ...hitBox(el) }))
+        .filter(({ el, rect, replaced }) => {
+          if (rect.width <= 0 || rect.height <= 0) return false;
+          // WCAG 2.5.8 inline exception: a link flowing in a sentence is constrained by the
+          // line-height of its text, not a tap-target failure. An inline link wrapping an
+          // icon/image is NOT exempt — its hitBox already reflects the real (image) tap area.
+          if (!replaced && getComputedStyle(el).display === 'inline') return false;
+          // Small in BOTH dimensions. A wide-but-short link (354×40) is tappable; only a
+          // genuinely tiny target is flagged. (A rare thin/skinny control may slip through.)
+          return rect.width < 44 && rect.height < 44;
+        })
+        .map(({ el, rect }) => ({
           type: 'tap_target_small' as const,
           severity: 'warn' as const,
           detail: 'below 44x44 minimum',
           selector: cssPath(el),
-          size: `${box.width}x${box.height}`,
-          rect: box,
+          size: `${rect.width}x${rect.height}`,
+          rect,
         })),
     );
 

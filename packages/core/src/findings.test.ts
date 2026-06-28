@@ -268,6 +268,28 @@ describe('collectFindings false positives', () => {
     }
   });
 
+  it('does not flag a wide-but-short link (tappable horizontally)', async () => {
+    const { findings, context } = await findingsFor(
+      '<a href="#" style="display:inline-block;width:200px;height:30px">wide nav link</a>',
+    );
+    try {
+      expect(findings.find((f) => f.type === 'tap_target_small')).toBeUndefined();
+    } finally {
+      await context.close();
+    }
+  });
+
+  it('does not flag an inline text link in a sentence (WCAG inline exception)', async () => {
+    const { findings, context } = await findingsFor(
+      '<p style="font-size:16px">please see <a href="#">this inline link</a> in a sentence of text</p>',
+    );
+    try {
+      expect(findings.find((f) => f.type === 'tap_target_small')).toBeUndefined();
+    } finally {
+      await context.close();
+    }
+  });
+
   it('does not flag a child clipped by CSS containment (contain:paint)', async () => {
     const { findings, context } = await findingsFor(
       '<section style="contain:paint">' +

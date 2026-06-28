@@ -6,6 +6,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
+- **`tap_target_small` is far less noisy.** It now flags an interactive element only when it is small in
+  **both** dimensions (a wide-but-short link like 354×40 is comfortably tappable, so it's no longer
+  flagged), and it exempts **inline text links** flowing in a sentence (per the WCAG 2.5.8 inline
+  exception). On real sites this cut the flood from ~90–99% of all controls down to the genuinely tiny
+  ones (icon buttons, tiny vote arrows). Icon/image links are unchanged — their real (image) tap area is
+  still measured.
 - **Full-page screenshots (were viewport-only).** A render now captures the whole page, not just the
   first viewport fold — so the image shows what broke below the fold, and the document-coordinate
   finding `rect`s and the `--annotate` overlay line up with the capture. (The README/MCP/JSDoc already
